@@ -1,4 +1,4 @@
-export const fakeDb = {
+export const demoDb = {
   leads: [
     { id: 1, company: 'Elkjøp', status: 'Tilbud sendt', value: 120000, commission: 10, ambassador: 'Mina N.', owner: 'Anne', priority: 'Høy' },
     { id: 2, company: 'Power Norge', status: 'Møte booket', value: 89000, commission: 10, ambassador: 'Mina N.', owner: 'Sander', priority: 'Middels' },
@@ -6,9 +6,9 @@ export const fakeDb = {
     { id: 4, company: 'Bohus', status: 'Åpen', value: 74000, commission: 8, ambassador: 'Lars B.', owner: 'Espen', priority: 'Lav' }
   ],
   ambassadors: [
-    { id: 1, name: 'Mina N.', status: 'Aktiv' },
-    { id: 2, name: 'Lars B.', status: 'Paused' },
-    { id: 3, name: 'Hedda R.', status: 'Aktiv' }
+    { id: 1, name: 'Mina N.', status: 'Aktiv', inviteLimit: 30 },
+    { id: 2, name: 'Lars B.', status: 'Pauset', inviteLimit: 12 },
+    { id: 3, name: 'Hedda R.', status: 'Aktiv', inviteLimit: 20 }
   ],
   commissionLog: []
 };
@@ -28,5 +28,5 @@ export const revenueByChannel = [
   { label: 'Ambassadørkampanjer', value: 28 }
 ];
 
-export const currency = (v) =>
-  new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(v);
+export const currency = (value) =>
+  new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(value);

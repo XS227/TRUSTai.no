@@ -10,7 +10,7 @@ export function initChannelChart() {
       labels: revenueByChannel.map((d) => d.label),
       datasets: [
         {
-          label: 'Revenue andel',
+          label: 'Kanalandel',
           data: revenueByChannel.map((d) => d.value),
           backgroundColor: ['#2956f2', '#16a34a', '#f59e0b']
         }

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ambassadør demo</title>
+    <title>Ambassadørside</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
@@ -12,42 +12,42 @@
       <aside class="sidebar">
         <div class="brand">ANIMER</div>
         <nav class="main-nav">
-          <a href="index.html">Oversikt</a>
+          <a href="index.html">Landingsside</a>
           <a href="ambassador.html" class="active">Ambassadør</a>
-          <a href="admin.html">Super Admin</a>
-          <a href="payout-support.html">Support</a>
+          <a href="admin.html">Superadministrator</a>
+          <a href="payout-support.html">Støtte</a>
         </nav>
       </aside>
       <div class="content">
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle" aria-expanded="false" aria-label="Åpne meny">☰</button>
-            <h1>Ambassadør-login demo</h1>
+            <h1>Ambassadørportal</h1>
           </div>
-          <span class="role-pill">Enterprise Preview</span>
+          <span class="role-pill">Personlig oversikt</span>
         </header>
 
         <main class="page">
           <section class="grid">
             <article class="card clickable-kpi active" data-status="Alle">
-              <h3>Dashboard - Alle leads</h3>
+              <h3>Alle leads</h3>
               <p class="kpi">0</p>
-              <p class="muted">Klikk for full pipeline</p>
+              <p class="muted">Klikk for å se hele flyten</p>
             </article>
             <article class="card clickable-kpi" data-status="Godkjent">
               <h3>Godkjent</h3>
               <p class="kpi">0</p>
-              <p class="muted">Klikk for å filtrere</p>
+              <p class="muted">Klikk for filtrering</p>
             </article>
             <article class="card clickable-kpi" data-status="Møte booket">
               <h3>Møte booket</h3>
               <p class="kpi">0</p>
-              <p class="muted">Klikk for å filtrere</p>
+              <p class="muted">Klikk for filtrering</p>
             </article>
           </section>
 
           <section class="card">
-            <h2>Pipeline tabs</h2>
+            <h2>Leadflyt</h2>
             <div class="pipeline-tabs">
               <button class="pipeline-tab active" data-status="Alle">Alle</button>
               <button class="pipeline-tab" data-status="Møte booket">Møte booket (<span data-stat="Møte booket">0</span>)</button>
@@ -66,35 +66,35 @@
 
           <section class="split">
             <article class="card">
-              <h2>Lead-detaljside</h2>
+              <h2>Leaddetaljer</h2>
               <p><strong id="detailCompany"></strong></p>
               <div class="form-grid">
-                <label>Status (fake dropdown)
+                <label>Status
                   <select id="detailStatus">
                     <option>Åpen</option><option>Møte booket</option><option>Tilbud sendt</option><option>Godkjent</option><option>Avslag</option>
                   </select>
                 </label>
-                <label>Deal value
+                <label>Avtaleverdi
                   <input id="detailValue" type="number" />
                 </label>
-                <label>Provisjon %
+                <label>Provisjon i prosent
                   <input id="detailPct" type="number" min="0" max="100" />
                 </label>
-                <p>Auto-beregnet provisjon: <strong id="detailCommission"></strong></p>
+                <p>Beregnet provisjon: <strong id="detailCommission"></strong></p>
               </div>
             </article>
 
             <article class="card">
               <h2>Del Animer</h2>
-              <p class="muted">Fake performance: <strong>76%</strong> CTR siste 7 dager</p>
+              <p class="muted">Ytelse: <strong>76 %</strong> klikkrate siste 7 dager</p>
               <button id="copyLink" class="btn-primary">Kopier lenke</button>
               <div class="text-template">
-                <p><span class="badge info">Bruk denne teksten</span></p>
+                <p><span class="badge info">Forslag til melding</span></p>
                 <p>Hei! Vi bruker Animer for å øke synlighet. Har du 15 min for en prat denne uka?</p>
               </div>
               <div class="text-template">
-                <p><span class="badge info">Bruk denne teksten</span></p>
-                <p>Delingstekst for LinkedIn: "Vi har sett stor effekt med Animer - si ifra hvis du vil ha intro"</p>
+                <p><span class="badge info">Forslag til melding</span></p>
+                <p>Delingstekst for LinkedIn: "Vi har sett stor effekt med Animer. Gi beskjed hvis du vil ha introduksjon."</p>
               </div>
             </article>
           </section>
@@ -109,35 +109,36 @@
               <div class="chart-wrap"><canvas id="offerChart"></canvas></div>
             </article>
             <article class="chart-card">
-              <h3>Revenue per kanal</h3>
+              <h3>Andel per kanal</h3>
               <div class="chart-wrap"><canvas id="channelChart"></canvas></div>
             </article>
           </section>
 
           <section class="card">
             <h2>Inntekt</h2>
-            <p class="kpi">NOK 43 800 tilgjengelig</p>
-            <p class="muted">Summering: 3 godkjente leads • 1 pending</p>
-            <button id="openPayout" class="btn-primary">UTBETAL</button>
-            <button id="openInvoice" class="btn-ghost">Fake faktura-opplasting</button>
+            <p class="kpi">43 800 kr tilgjengelig</p>
+            <p class="muted">Oppsummering: 3 godkjente leads • 1 avventer</p>
+            <button id="openPayout" class="btn-primary">Be om utbetaling</button>
+            <button id="openInvoice" class="btn-ghost">Last opp faktura</button>
           </section>
         </main>
+        <footer class="site-footer">© Levert av Setai.no</footer>
       </div>
     </div>
 
     <aside class="sidepanel" id="payoutPanel">
-      <h2>Utbetalingspanel</h2>
-      <p>Velg konto og bekreft utbetaling på NOK 43 800.</p>
+      <h2>Utbetaling</h2>
+      <p>Velg konto og bekreft utbetaling på 43 800 kr.</p>
       <div class="form-grid">
         <input value="NO93 8601 1111 222" />
-        <button class="btn-primary">Send payout request</button>
+        <button class="btn-primary">Send utbetalingsforespørsel</button>
         <button id="closePayout">Lukk</button>
       </div>
     </aside>
 
     <section class="modal" id="invoiceModal">
-      <h2>Fake faktura-opplasting</h2>
-      <p>Drag & drop (simulert) eller velg fil.</p>
+      <h2>Fakturaopplasting</h2>
+      <p>Dra og slipp (simulert) eller velg fil.</p>
       <input type="file" />
       <button class="btn-primary">Last opp</button>
       <button id="closeInvoice">Lukk</button>

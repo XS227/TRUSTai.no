@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Animer MVP demo</title>
+    <title>Animer landingsside</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,31 +11,84 @@
       <aside class="sidebar">
         <div class="brand">ANIMER</div>
         <nav class="main-nav">
-          <a href="index.html" class="active">Oversikt</a>
+          <a href="index.html" class="active">Landingsside</a>
           <a href="ambassador.html">Ambassadør</a>
-          <a href="admin.html">Super Admin</a>
-          <a href="payout-support.html">Support</a>
+          <a href="admin.html">Superadministrator</a>
+          <a href="payout-support.html">Støtte</a>
         </nav>
       </aside>
       <div class="content">
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle" aria-expanded="false" aria-label="Åpne meny">☰</button>
-            <h1>MVP Demo Walkthrough</h1>
+            <h1>Velkommen til Animer</h1>
           </div>
-          <span class="role-pill">Sidebar + Topbar på alle sider</span>
+          <span class="role-pill">Innlogging og registrering</span>
         </header>
         <main class="page">
           <section class="card">
-            <h2>Hva demoen inneholder</h2>
-            <p>Enterprise-stil prototype med fake database i JavaScript, dynamisk rendering og rollebaserte flows.</p>
+            <h2>Landingsside</h2>
+            <p>
+              Samle ambassadører, leads og oppfølging på ett sted. Velg hvordan du vil komme i gang og gå videre til riktig
+              visning.
+            </p>
           </section>
+
+          <section class="grid auth-grid">
+            <article class="card">
+              <h3>Logg inn</h3>
+              <div class="form-grid">
+                <label>E-postadresse
+                  <input type="email" placeholder="Skriv e-postadresse" />
+                </label>
+                <label>Passord
+                  <input type="password" placeholder="Skriv passord" />
+                </label>
+                <button class="btn-primary">Logg inn med e-post</button>
+              </div>
+              <p class="muted">Du kan også logge inn med:</p>
+              <div class="social-buttons">
+                <button class="btn-ghost">Google</button>
+                <button class="btn-ghost">Facebook</button>
+              </div>
+            </article>
+
+            <article class="card">
+              <h3>Registrer ny bruker</h3>
+              <div class="form-grid">
+                <label>Navn
+                  <input type="text" placeholder="Skriv fullt navn" />
+                </label>
+                <label>E-postadresse
+                  <input type="email" placeholder="Skriv e-postadresse" />
+                </label>
+                <label>Passord
+                  <input type="password" placeholder="Lag passord" />
+                </label>
+                <button class="btn-primary">Registrer med e-post</button>
+              </div>
+              <p class="muted">Du kan også registrere deg med:</p>
+              <div class="social-buttons">
+                <button class="btn-ghost">Google</button>
+                <button class="btn-ghost">Facebook</button>
+              </div>
+            </article>
+          </section>
+
           <section class="grid">
-            <article class="card"><h3>Ambassadør-login demo</h3><p>KPI-kort, pipeline tabs, lead-detalj, deling, inntekt og utbetaling.</p><a href="ambassador.html">Åpne →</a></article>
-            <article class="card"><h3>Super Admin demo</h3><p>Lead status-dropdown, provisjonsendring med kommentar + changelog, ambassadør toggle.</p><a href="admin.html">Åpne →</a></article>
-            <article class="card"><h3>Support / økonomi</h3><p>Ekstra visning for support, payout context og FAQ-scenario.</p><a href="payout-support.html">Åpne →</a></article>
+            <article class="card">
+              <h3>Gå til ambassadørvisning</h3>
+              <p>Se leads, delingsforslag, inntekt og utbetaling.</p>
+              <a href="ambassador.html">Åpne ambassadørside →</a>
+            </article>
+            <article class="card">
+              <h3>Gå til superadministrator</h3>
+              <p>Juster provisjon, invitasjonsgrenser og få oversikt med diagrammer.</p>
+              <a href="admin.html">Åpne superadministratorside →</a>
+            </article>
           </section>
         </main>
+        <footer class="site-footer">© Levert av Setai.no</footer>
       </div>
     </div>
     <script type="module" src="app.js"></script>
