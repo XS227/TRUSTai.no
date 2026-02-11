@@ -1,19 +1,23 @@
-const fakeDb = {
-  leads: [
-    { id: 1, company: 'Elkjøp', status: 'Tilbud sendt', value: 120000, commission: 10, ambassador: 'Mina N.', owner: 'Anne', priority: 'Høy' },
-    { id: 2, company: 'Power Norge', status: 'Møte booket', value: 89000, commission: 10, ambassador: 'Mina N.', owner: 'Sander', priority: 'Middels' },
-    { id: 3, company: 'XXL Sport', status: 'Godkjent', value: 150000, commission: 12, ambassador: 'Lars B.', owner: 'Anne', priority: 'Høy' },
-    { id: 4, company: 'Bohus', status: 'Åpen', value: 74000, commission: 8, ambassador: 'Lars B.', owner: 'Espen', priority: 'Lav' }
-  ],
-  ambassadors: [
-    { id: 1, name: 'Mina N.', status: 'Aktiv' },
-    { id: 2, name: 'Lars B.', status: 'Paused' },
-    { id: 3, name: 'Hedda R.', status: 'Aktiv' }
-  ],
-  commissionLog: []
-};
+import { initAmbassadorCharts } from './charts/index.js';
+import { currency, fakeDb } from './data-store.js';
 
-const currency = (v) => new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(v);
+function initNavbar() {
+  const navToggle = document.querySelector('#navToggle');
+  const sidebar = document.querySelector('.sidebar');
+  if (!navToggle || !sidebar) return;
+
+  navToggle.addEventListener('click', () => {
+    const isOpen = sidebar.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  sidebar.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
 
 function initAmbassadorPage() {
   const leadList = document.querySelector('#leadList');
@@ -37,7 +41,10 @@ function initAmbassadorPage() {
 
   const renderLeadList = () => {
     const rows = fakeDb.leads.filter((lead) => leadFilter === 'Alle' || lead.status === leadFilter);
-    leadList.innerHTML = rows.map((lead) => `
+    leadList.innerHTML =
+      rows
+        .map(
+          (lead) => `
       <tr>
         <td><button class="btn-ghost open-detail" data-id="${lead.id}">${lead.company}</button></td>
         <td>${lead.status}</td>
@@ -45,7 +52,9 @@ function initAmbassadorPage() {
         <td>${lead.commission}%</td>
         <td><button class="btn-ghost change-status" data-id="${lead.id}">Endre status</button></td>
       </tr>
-    `).join('') || '<tr><td colspan="5">Ingen leads i dette filteret.</td></tr>';
+    `
+        )
+        .join('') || '<tr><td colspan="5">Ingen leads i dette filteret.</td></tr>';
   };
 
   const renderDetail = () => {
@@ -61,6 +70,7 @@ function initAmbassadorPage() {
   renderKpis();
   renderLeadList();
   renderDetail();
+  initAmbassadorCharts();
 
   document.querySelectorAll('.clickable-kpi').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -130,29 +140,39 @@ function initAdminPage() {
   if (!adminLeadBody) return;
 
   const renderAdminLeads = () => {
-    adminLeadBody.innerHTML = fakeDb.leads.map((lead) => `
+    adminLeadBody.innerHTML = fakeDb.leads
+      .map(
+        (lead) => `
       <tr>
         <td>${lead.company}</td>
         <td>${lead.ambassador}</td>
         <td>
           <select class="admin-status" data-id="${lead.id}">
-            ${['Åpen', 'Møte booket', 'Tilbud sendt', 'Godkjent', 'Avslag'].map((s) => `<option ${lead.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            ${['Åpen', 'Møte booket', 'Tilbud sendt', 'Godkjent', 'Avslag']
+              .map((s) => `<option ${lead.status === s ? 'selected' : ''}>${s}</option>`)
+              .join('')}
           </select>
         </td>
         <td>${currency((lead.value * lead.commission) / 100)}</td>
       </tr>
-    `).join('');
+    `
+      )
+      .join('');
   };
 
   const renderAmbassadors = () => {
     const wrapper = document.querySelector('#ambassadorList');
-    wrapper.innerHTML = fakeDb.ambassadors.map((amb) => `
+    wrapper.innerHTML = fakeDb.ambassadors
+      .map(
+        (amb) => `
       <div class="list-item">
         <strong>${amb.name}</strong>
         <div class="muted">Status: <span>${amb.status}</span></div>
         <button class="toggle ${amb.status === 'Aktiv' ? 'active' : ''}" data-id="${amb.id}"></button>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
   };
 
   const renderLog = () => {
@@ -201,5 +221,6 @@ function initAdminPage() {
   });
 }
 
+initNavbar();
 initAmbassadorPage();
 initAdminPage();
