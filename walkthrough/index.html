@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="nb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animer walkthrough</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-wrap">
+        <h1>Animer – Walkthrough / Presentasjon</h1>
+        <p>HTML-versjon av produktvisningen for ambassadør og super admin.</p>
+        <nav>
+          <a href="index.html">Oversikt</a>
+          <a href="ambassador.html">Ambassadør dashboard</a>
+          <a href="admin.html">Super Admin pipeline</a>
+          <a href="payout-support.html">Utbetaling & support</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Hva denne presentasjonen viser</h2>
+        <p>
+          Siden viser en enkel klikkbar prototype av MVP-flyten: onboarding, deling,
+          lead-attribution, pipeline og provisjon.
+        </p>
+        <div class="flow">
+          <div class="step"><strong>1.</strong> Ambassadør registrerer seg og blir godkjent.</div>
+          <div class="step"><strong>2.</strong> Deling med unik referral-lenke.</div>
+          <div class="step"><strong>3.</strong> Klikk blir til leads, som spores i pipeline.</div>
+          <div class="step"><strong>4.</strong> Godkjente leads genererer provisjon og utbetaling.</div>
+        </div>
+      </section>
+
+      <section class="grid" style="margin-top: 18px">
+        <article class="card">
+          <h2>Ambassadør-perspektiv</h2>
+          <p>Oversikt over lenker, inntekt, provisjonstatus og aktivitet.</p>
+          <p class="callout">Brukes i demo for å vise "hva tjener jeg" og "hvor er leads".</p>
+          <p><a href="ambassador.html">Åpne ambassadør-side →</a></p>
+        </article>
+
+        <article class="card">
+          <h2>Super Admin-perspektiv</h2>
+          <p>Operasjonell pipeline med statusflyt, owner og prioritet.</p>
+          <p class="callout">Brukes i demo for lead-oppfølging og statusendringer.</p>
+          <p><a href="admin.html">Åpne admin-side →</a></p>
+        </article>
+
+        <article class="card">
+          <h2>Utbetaling & support</h2>
+          <p>Kommisjonsdetaljer, payout requests, FAQ og tickets.</p>
+          <p class="callout">Brukes i demo for økonomiflyt og kundesupport.</p>
+          <p><a href="payout-support.html">Åpne utbetaling/support →</a></p>
+        </article>
+      </section>
+    </main>
+    <footer>Prototype laget som statisk HTML for rask walkthrough.</footer>
+  </body>
+</html>

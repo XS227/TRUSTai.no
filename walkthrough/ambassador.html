@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="nb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ambassadør dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-wrap">
+        <h1>Ambassadør dashboard</h1>
+        <p>Oversikt over leads, kommisjon og deling.</p>
+        <nav>
+          <a href="index.html">Oversikt</a>
+          <a href="ambassador.html">Ambassadør dashboard</a>
+          <a href="admin.html">Super Admin pipeline</a>
+          <a href="payout-support.html">Utbetaling & support</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="grid">
+        <article class="card">
+          <h2>Referral-lenke</h2>
+          <p><strong>animer.no/a/ANM-4821</strong></p>
+          <p>36 unike klikk siste 30 dager.</p>
+          <span class="badge pending">Attribution-vindu: 90 dager</span>
+        </article>
+        <article class="card">
+          <h2>Provisjon tilgjengelig</h2>
+          <p class="kpi">43 500 NOK</p>
+          <p>5 godkjente leads klare for utbetaling.</p>
+          <span class="badge ok">Status: AVAILABLE</span>
+        </article>
+        <article class="card">
+          <h2>Pipeline status</h2>
+          <p>Åpne leads: <strong>7</strong></p>
+          <p>Møte booket: <strong>4</strong></p>
+          <p>Tilbud sendt: <strong>2</strong></p>
+        </article>
+      </section>
+
+      <section class="card" style="margin-top: 18px">
+        <h2>Siste aktivitet</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Dato</th>
+              <th>Hendelse</th>
+              <th>Lead</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>04.06</td>
+              <td>Tilbud godkjent</td>
+              <td>Nordic Retail AS</td>
+              <td><span class="badge ok">APPROVED</span></td>
+            </tr>
+            <tr>
+              <td>03.06</td>
+              <td>Møte booket</td>
+              <td>ByggPartner</td>
+              <td><span class="badge pending">MEETING_BOOKED</span></td>
+            </tr>
+            <tr>
+              <td>01.06</td>
+              <td>Nytt klikk fra LinkedIn</td>
+              <td>-</td>
+              <td><span class="badge warn">SPORING</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <footer>Demo-side for ambassadørrollen i Animer.</footer>
+  </body>
+</html>

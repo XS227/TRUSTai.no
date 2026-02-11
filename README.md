@@ -397,3 +397,19 @@ For å komme raskt i produksjon:
   - Avansert A/B-testing av tekster
   - Multinivå kommisjon (utover enkel invitering)
 
+
+## HTML walkthrough / presentasjon
+
+Det ligger en enkel statisk HTML-presentasjon i `walkthrough/`:
+
+- `walkthrough/index.html` – oversikt
+- `walkthrough/ambassador.html` – ambassadør dashboard
+- `walkthrough/admin.html` – super admin pipeline
+- `walkthrough/payout-support.html` – utbetaling og support
+
+For å vise sidene lokalt:
+
+```bash
+python3 -m http.server 8000
+# åpne http://localhost:8000/walkthrough/
+```

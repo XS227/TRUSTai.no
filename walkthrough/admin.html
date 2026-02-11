@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="nb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Super Admin pipeline</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-wrap">
+        <h1>Super Admin – Pipeline</h1>
+        <p>Lead-oppfølging fra kontakt til godkjent tilbud.</p>
+        <nav>
+          <a href="index.html">Oversikt</a>
+          <a href="ambassador.html">Ambassadør dashboard</a>
+          <a href="admin.html">Super Admin pipeline</a>
+          <a href="payout-support.html">Utbetaling & support</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Statusflyt</h2>
+        <div class="flow">
+          <div class="step"><strong>OPEN</strong> → Lead registrert via referral-lenke.</div>
+          <div class="step"><strong>MEETING_BOOKED</strong> → Møte etablert med potensielt kundeemne.</div>
+          <div class="step"><strong>OFFER_SENT</strong> → Tilbud sendt fra salgsteam.</div>
+          <div class="step"><strong>APPROVED / REJECTED</strong> → Utfall avgjør kommisjon.</div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top: 18px">
+        <h2>Aktive leads</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Lead</th>
+              <th>Ambassadør</th>
+              <th>Eier</th>
+              <th>Prioritet</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Nordic Retail AS</td>
+              <td>Hanna Solberg</td>
+              <td>Espen (Sales)</td>
+              <td>Høy</td>
+              <td><span class="badge ok">APPROVED</span></td>
+            </tr>
+            <tr>
+              <td>ByggPartner</td>
+              <td>Hanna Solberg</td>
+              <td>Anne (Sales)</td>
+              <td>Middels</td>
+              <td><span class="badge pending">MEETING_BOOKED</span></td>
+            </tr>
+            <tr>
+              <td>Coastal Energy</td>
+              <td>Tobias L.</td>
+              <td>Anne (Sales)</td>
+              <td>Høy</td>
+              <td><span class="badge warn">OFFER_SENT</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <footer>Demo-side for super admin og pipeline-arbeid.</footer>
+  </body>
+</html>

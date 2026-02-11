@@ -1,0 +1,129 @@
+:root {
+  --bg: #f5f7ff;
+  --surface: #ffffff;
+  --primary: #445bff;
+  --primary-soft: #e8ecff;
+  --text: #1f2742;
+  --muted: #5f6b95;
+  --ok: #1ca56d;
+  --warn: #f59e0b;
+  --radius: 14px;
+  --shadow: 0 8px 30px rgba(28, 45, 128, 0.12);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+header {
+  background: linear-gradient(115deg, #3247d5 0%, #5f74ff 100%);
+  color: white;
+  padding: 28px 20px 80px;
+}
+
+.header-wrap {
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+nav {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+nav a {
+  text-decoration: none;
+  color: white;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+main {
+  max-width: 1050px;
+  margin: -45px auto 50px;
+  padding: 0 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+h1 { margin: 0; font-size: 2rem; }
+h2 { margin: 6px 0 14px; font-size: 1.2rem; }
+p { margin: 0 0 10px; line-height: 1.5; color: var(--muted); }
+
+.kpi {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge.ok { background: #ddf9ec; color: var(--ok); }
+.badge.warn { background: #fff3d6; color: #a55b00; }
+.badge.pending { background: #ecefff; color: #3e54d8; }
+
+.flow {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.step {
+  border-left: 4px solid var(--primary);
+  background: #f8f9ff;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #ebefff;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  padding: 16px;
+  font-size: 13px;
+}
+
+.callout {
+  background: var(--primary-soft);
+  border: 1px solid #ccd4ff;
+  border-radius: 10px;
+  padding: 12px;
+  color: #37407c;
+}
