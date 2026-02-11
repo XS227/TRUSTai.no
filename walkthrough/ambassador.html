@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ambassadør demo</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div class="app-layout">
       <aside class="sidebar">
         <div class="brand">ANIMER</div>
-        <nav>
+        <nav class="main-nav">
           <a href="index.html">Oversikt</a>
           <a href="ambassador.html" class="active">Ambassadør</a>
           <a href="admin.html">Super Admin</a>
@@ -19,7 +20,10 @@
       </aside>
       <div class="content">
         <header class="topbar">
-          <h1>Ambassadør-login demo</h1>
+          <div class="topbar-left">
+            <button id="navToggle" class="nav-toggle" aria-expanded="false" aria-label="Åpne meny">☰</button>
+            <h1>Ambassadør-login demo</h1>
+          </div>
           <span class="role-pill">Enterprise Preview</span>
         </header>
 
@@ -95,6 +99,21 @@
             </article>
           </section>
 
+          <section class="grid chart-grid">
+            <article class="chart-card">
+              <h3>Inntekt siste 6 måneder</h3>
+              <div class="chart-wrap"><canvas id="incomeChart"></canvas></div>
+            </article>
+            <article class="chart-card">
+              <h3>Tilbud sendt per måned</h3>
+              <div class="chart-wrap"><canvas id="offerChart"></canvas></div>
+            </article>
+            <article class="chart-card">
+              <h3>Revenue per kanal</h3>
+              <div class="chart-wrap"><canvas id="channelChart"></canvas></div>
+            </article>
+          </section>
+
           <section class="card">
             <h2>Inntekt</h2>
             <p class="kpi">NOK 43 800 tilgjengelig</p>
@@ -124,6 +143,6 @@
       <button id="closeInvoice">Lukk</button>
     </section>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

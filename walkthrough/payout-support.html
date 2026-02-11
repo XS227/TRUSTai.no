@@ -10,7 +10,7 @@
     <div class="app-layout">
       <aside class="sidebar">
         <div class="brand">ANIMER</div>
-        <nav>
+        <nav class="main-nav">
           <a href="index.html">Oversikt</a>
           <a href="ambassador.html">Ambassadør</a>
           <a href="admin.html">Super Admin</a>
@@ -19,7 +19,10 @@
       </aside>
       <div class="content">
         <header class="topbar">
-          <h1>Support & økonomi snapshot</h1>
+          <div class="topbar-left">
+            <button id="navToggle" class="nav-toggle" aria-expanded="false" aria-label="Åpne meny">☰</button>
+            <h1>Support & økonomi snapshot</h1>
+          </div>
           <span class="role-pill">Demo</span>
         </header>
         <main class="page">
@@ -31,5 +34,6 @@
         </main>
       </div>
     </div>
+    <script type="module" src="app.js"></script>
   </body>
 </html>
