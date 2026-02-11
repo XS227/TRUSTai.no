@@ -3,74 +3,71 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Super Admin pipeline</title>
+    <title>Super Admin demo</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>
-      <div class="header-wrap">
-        <h1>Super Admin – Pipeline</h1>
-        <p>Lead-oppfølging fra kontakt til godkjent tilbud.</p>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="brand">ANIMER</div>
         <nav>
           <a href="index.html">Oversikt</a>
-          <a href="ambassador.html">Ambassadør dashboard</a>
-          <a href="admin.html">Super Admin pipeline</a>
-          <a href="payout-support.html">Utbetaling & support</a>
+          <a href="ambassador.html">Ambassadør</a>
+          <a href="admin.html" class="active">Super Admin</a>
+          <a href="payout-support.html">Support</a>
         </nav>
+      </aside>
+      <div class="content">
+        <header class="topbar">
+          <h1>Super Admin demo</h1>
+          <span class="role-pill">Pipeline & Governance</span>
+        </header>
+
+        <main class="page">
+          <section class="card">
+            <h2>Lead-list med status-dropdown</h2>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Lead</th><th>Ambassadør</th><th>Status</th><th>Provisjon</th></tr></thead>
+                <tbody id="adminLeadBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="split">
+            <article class="card">
+              <h2>Endre provisjon</h2>
+              <div class="form-grid">
+                <label>Lead
+                  <select id="commissionLead">
+                    <option value="1">Elkjøp</option><option value="2">Power Norge</option><option value="3">XXL Sport</option><option value="4">Bohus</option>
+                  </select>
+                </label>
+                <label>Ny provisjon %
+                  <input id="commissionPct" type="number" value="12" min="0" max="100" />
+                </label>
+                <label>Kommentar (required)
+                  <textarea id="commissionComment" rows="3" placeholder="Forklar hvorfor provisjon endres"></textarea>
+                </label>
+                <button id="saveCommission" class="btn-primary">Lagre endring</button>
+                <p id="commissionMsg" class="muted"></p>
+              </div>
+            </article>
+            <article class="card">
+              <h2>Endringslogg (fake)</h2>
+              <ul id="changeLog"></ul>
+            </article>
+          </section>
+
+          <section class="card">
+            <h2>Ambassadør-liste</h2>
+            <p class="muted">Pause/Aktiv toggle for operasjonell kontroll.</p>
+            <div id="ambassadorList"></div>
+          </section>
+        </main>
       </div>
-    </header>
+    </div>
 
-    <main class="stack">
-      <section class="card">
-        <h2>Statusflyt</h2>
-        <div class="flow">
-          <div class="step"><strong>OPEN</strong> → Lead registrert via referral-lenke.</div>
-          <div class="step"><strong>MEETING_BOOKED</strong> → Møte etablert med potensielt kundeemne.</div>
-          <div class="step"><strong>OFFER_SENT</strong> → Tilbud sendt fra salgsteam.</div>
-          <div class="step"><strong>APPROVED / REJECTED</strong> → Utfall avgjør kommisjon.</div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Aktive leads</h2>
-        <div class="table-wrap">
-          <table class="table">
-          <thead>
-            <tr>
-              <th>Lead</th>
-              <th>Ambassadør</th>
-              <th>Eier</th>
-              <th>Prioritet</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Nordic Retail AS</td>
-              <td>Hanna Solberg</td>
-              <td>Espen (Sales)</td>
-              <td>Høy</td>
-              <td><span class="badge ok">APPROVED</span></td>
-            </tr>
-            <tr>
-              <td>ByggPartner</td>
-              <td>Hanna Solberg</td>
-              <td>Anne (Sales)</td>
-              <td>Middels</td>
-              <td><span class="badge pending">MEETING_BOOKED</span></td>
-            </tr>
-            <tr>
-              <td>Coastal Energy</td>
-              <td>Tobias L.</td>
-              <td>Anne (Sales)</td>
-              <td>Høy</td>
-              <td><span class="badge warn">OFFER_SENT</span></td>
-            </tr>
-          </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-    <footer>Demo-side for super admin og pipeline-arbeid.</footer>
+    <script src="app.js"></script>
   </body>
 </html>
