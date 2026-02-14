@@ -144,6 +144,21 @@ if (toggleRegisterEmailBtn && registerEmailFields) {
   });
 }
 
+
+const toggleRegisterEmailBtn = document.querySelector('#toggleRegisterEmail');
+const registerEmailFields = document.querySelector('#registerEmailFields');
+
+if (toggleRegisterEmailBtn && registerEmailFields) {
+  toggleRegisterEmailBtn.addEventListener('click', () => {
+    registerEmailFields.classList.remove('is-hidden');
+    registerEmailFields.setAttribute('aria-hidden', 'false');
+    toggleRegisterEmailBtn.classList.add('is-hidden');
+
+    const firstField = registerEmailFields.querySelector('input');
+    firstField?.focus();
+  });
+}
+
 loginGoogleBtn?.addEventListener('click', window.loginWithGoogle);
 registerGoogleBtn?.addEventListener('click', window.loginWithGoogle);
 
