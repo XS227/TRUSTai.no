@@ -1,7 +1,5 @@
-import { initAmbassadorCharts } from './charts/index.js';
-import { currency, demoDb } from './data-store.js';
+import { AMBASSADOR_STATUSES, LEAD_STATUSES, calculateAmbassadorTotals, currency, demoDb } from './data-store.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
-import { getAnalytics, isSupported as isAnalyticsSupported } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js';
 import {
   getAuth,
   getRedirectResult,
@@ -17,48 +15,53 @@ const firebaseConfig = {
   projectId: 'animer-ambassador-mvp',
   storageBucket: 'animer-ambassador-mvp.firebasestorage.app',
   messagingSenderId: '793382601384',
-  appId: '1:793382601384:web:539e5516ac484f9dc6789d',
-  measurementId: 'G-34RDGR7ET2'
+  appId: '1:793382601384:web:539e5516ac484f9dc6789d'
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const authMessage = document.querySelector('#authMessage');
-
-async function initAnalytics() {
-  try {
-    if (await isAnalyticsSupported()) {
-      getAnalytics(firebaseApp);
-    }
-  } catch (error) {
-    console.warn('Analytics er ikke støttet i denne nettleseren.', error);
-  }
-}
+const DEFAULT_COMMISSION_RATE = 0.1;
 
 function setAuthMessage(message) {
   if (authMessage) authMessage.textContent = message;
 }
 
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function trackReferralFromUrl() {
+  const url = new URL(window.location.href);
+  const ref = (url.searchParams.get('ref') || '').trim().toUpperCase();
+  const target = url.searchParams.get('target') || 'ambassador.html';
+
+  if (!ref) return;
+
+  demoDb.referralClicks.push({
+    ambassadorId: ref,
+    timestamp: new Date().toISOString(),
+    ip: 'client-captured',
+    userAgent: navigator.userAgent
+  });
+
+  setCookie('ref', ref, 90);
+  window.location.replace(target);
+}
+
 function getFriendlyAuthError(error) {
-  const errorCode = error?.code || '';
-
-  if (errorCode === 'auth/popup-closed-by-user') {
-    return 'Innlogging avbrutt. Du lukket Google-vinduet før innlogging var ferdig.';
-  }
-
-  if (errorCode === 'auth/popup-blocked') {
-    return 'Nettleseren blokkerte popup. Vi prøver innlogging via redirect...';
-  }
-
-  if (errorCode === 'auth/unauthorized-domain') {
-    return 'Dette domenet er ikke godkjent i Firebase Authentication. Legg domenet til under Authorized domains i Firebase Console.';
-  }
-
-  if (errorCode === 'auth/internal-error') {
-    return 'Innlogging feilet i denne nettleseren. Prøv å åpne siden i Chrome/Safari og forsøk igjen.';
-  }
-
+  if (error?.code === 'auth/popup-closed-by-user') return 'Innlogging avbrutt.';
+  if (error?.code === 'auth/popup-blocked') return 'Popup blokkert. Vi prøver redirect-innlogging.';
+  if (error?.code === 'auth/unauthorized-domain') return 'Domenet er ikke whitelistet i Firebase Authentication.';
   return `Innlogging feilet: ${error?.message || 'Ukjent feil.'}`;
 }
 
@@ -68,11 +71,12 @@ async function ensureAmbassadorProfile(user) {
 
   if (!ambassadorSnap.exists()) {
     await setDoc(ambassadorRef, {
+      id: user.uid,
       name: user.displayName,
       email: user.email,
       status: 'pending',
-      commission_total: 0,
-      created_at: serverTimestamp()
+      commissionRate: DEFAULT_COMMISSION_RATE,
+      createdAt: serverTimestamp()
     });
   }
 }
@@ -81,93 +85,34 @@ async function handleRedirectLoginResult() {
   try {
     const result = await getRedirectResult(auth);
     if (!result?.user) return;
-
     await ensureAmbassadorProfile(result.user);
-    setAuthMessage(`Innlogget som ${result.user.email}`);
+    setAuthMessage(`Innlogget som ${result.user.email}. Status: Pending (manuell godkjenning).`);
   } catch (error) {
-    console.error('Redirect-innlogging feilet.', error);
     setAuthMessage(getFriendlyAuthError(error));
   }
 }
 
 window.loginWithGoogle = async (event) => {
-  const clickedButton = event?.currentTarget;
+  const button = event?.currentTarget;
   const provider = new GoogleAuthProvider();
 
-  if (clickedButton instanceof HTMLButtonElement) {
-    clickedButton.disabled = true;
-  }
-
-  setAuthMessage('Starter Google-innlogging...');
+  if (button instanceof HTMLButtonElement) button.disabled = true;
 
   try {
     const result = await signInWithPopup(auth, provider);
     await ensureAmbassadorProfile(result.user);
-    setAuthMessage(`Innlogget som ${result.user.email}`);
+    setAuthMessage(`Innlogget som ${result.user.email}. Status: Pending (manuell godkjenning).`);
   } catch (error) {
-    const shouldUseRedirect = ['auth/popup-blocked', 'auth/internal-error'].includes(error?.code);
-
-    if (shouldUseRedirect) {
-      setAuthMessage('Popup feilet. Sender deg videre til Google-innlogging...');
+    if (['auth/popup-blocked', 'auth/internal-error'].includes(error?.code)) {
+      setAuthMessage('Popup feilet. Sender til Google redirect...');
       await signInWithRedirect(auth, provider);
       return;
     }
-
-    console.error('Google-innlogging feilet.', error);
     setAuthMessage(getFriendlyAuthError(error));
   } finally {
-    if (clickedButton instanceof HTMLButtonElement) {
-      clickedButton.disabled = false;
-    }
+    if (button instanceof HTMLButtonElement) button.disabled = false;
   }
 };
-
-initAnalytics();
-handleRedirectLoginResult();
-
-const loginGoogleBtn = document.querySelector('#loginGoogle');
-const registerGoogleBtn = document.querySelector('#registerGoogle');
-const loginFacebookBtn = document.querySelector('#loginFacebook');
-const registerFacebookBtn = document.querySelector('#registerFacebook');
-
-const toggleRegisterEmailBtn = document.querySelector('#toggleRegisterEmail');
-const registerEmailFields = document.querySelector('#registerEmailFields');
-
-if (toggleRegisterEmailBtn && registerEmailFields) {
-  toggleRegisterEmailBtn.addEventListener('click', () => {
-    registerEmailFields.classList.remove('is-hidden');
-    registerEmailFields.setAttribute('aria-hidden', 'false');
-    toggleRegisterEmailBtn.classList.add('is-hidden');
-
-    const firstField = registerEmailFields.querySelector('input');
-    firstField?.focus();
-  });
-}
-
-
-const toggleRegisterEmailBtn = document.querySelector('#toggleRegisterEmail');
-const registerEmailFields = document.querySelector('#registerEmailFields');
-
-if (toggleRegisterEmailBtn && registerEmailFields) {
-  toggleRegisterEmailBtn.addEventListener('click', () => {
-    registerEmailFields.classList.remove('is-hidden');
-    registerEmailFields.setAttribute('aria-hidden', 'false');
-    toggleRegisterEmailBtn.classList.add('is-hidden');
-
-    const firstField = registerEmailFields.querySelector('input');
-    firstField?.focus();
-  });
-}
-
-loginGoogleBtn?.addEventListener('click', window.loginWithGoogle);
-registerGoogleBtn?.addEventListener('click', window.loginWithGoogle);
-
-const handleFacebookClick = () => {
-  setAuthMessage('Facebook-innlogging er ikke aktivert enda. Bruk Google eller e-post inntil videre.');
-};
-
-loginFacebookBtn?.addEventListener('click', handleFacebookClick);
-registerFacebookBtn?.addEventListener('click', handleFacebookClick);
 
 function initNavbar() {
   const navToggle = document.querySelector('#navToggle');
@@ -178,252 +123,225 @@ function initNavbar() {
     const isOpen = sidebar.classList.toggle('open');
     navToggle.setAttribute('aria-expanded', String(isOpen));
   });
+}
 
-  sidebar.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      navToggle.setAttribute('aria-expanded', 'false');
-    });
+function createLead({ name, company, email }) {
+  const emailKey = String(email || '').trim().toLowerCase();
+  const existingLead = demoDb.leads.find((lead) => lead.email.toLowerCase() === emailKey);
+
+  if (existingLead) {
+    return { created: false, reason: 'Lead finnes allerede. Ingen ny provisjon opprettes.' };
+  }
+
+  const ambassadorId = getCookie('ref') || null;
+  const newLead = {
+    id: `lead-${Date.now()}`,
+    name,
+    company,
+    email,
+    ambassadorId,
+    status: 'Open',
+    dealValue: 0,
+    commissionAmount: 0,
+    createdAt: new Date().toISOString()
+  };
+
+  demoDb.leads.unshift(newLead);
+  return {
+    created: true,
+    lead: newLead
+  };
+}
+
+function renderAdmin() {
+  const leadBody = document.querySelector('#adminLeadBody');
+  const ambassadorBody = document.querySelector('#adminAmbassadorBody');
+  const payoutBody = document.querySelector('#adminPayoutBody');
+  if (!leadBody || !ambassadorBody || !payoutBody) return;
+
+  leadBody.innerHTML = demoDb.leads
+    .map((lead) => {
+      const ambassadorLabel = lead.ambassadorId || 'Ingen';
+      return `
+        <tr>
+          <td>${lead.company}</td>
+          <td>${ambassadorLabel}</td>
+          <td>
+            <select class="admin-status" data-id="${lead.id}">
+              ${LEAD_STATUSES.map((status) => `<option value="${status}" ${status === lead.status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+          </td>
+          <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${lead.status === 'Won' ? '' : 'disabled'} /></td>
+          <td>${currency(lead.commissionAmount || 0)}</td>
+        </tr>`;
+    })
+    .join('');
+
+  ambassadorBody.innerHTML = demoDb.ambassadors
+    .map((ambassador) => {
+      const totals = calculateAmbassadorTotals(ambassador.id);
+      return `
+      <tr>
+        <td>${ambassador.name}</td>
+        <td>
+          <select class="ambassador-status" data-id="${ambassador.id}">
+            ${AMBASSADOR_STATUSES.map((status) => `<option value="${status}" ${status === ambassador.status ? 'selected' : ''}>${status}</option>`).join('')}
+          </select>
+        </td>
+        <td>${totals.leads}</td>
+        <td>${currency(totals.revenue)}</td>
+        <td>${currency(totals.earned)}</td>
+      </tr>`;
+    })
+    .join('');
+
+  payoutBody.innerHTML = demoDb.ambassadors
+    .map((ambassador) => {
+      const totals = calculateAmbassadorTotals(ambassador.id);
+      return `
+      <tr>
+        <td>${ambassador.name}</td>
+        <td>${currency(totals.earned)}</td>
+        <td>${currency(totals.paidOut)}</td>
+        <td>${currency(totals.available)}</td>
+        <td><button class="btn-ghost mark-paid" data-id="${ambassador.id}">Marker utbetalt</button></td>
+      </tr>`;
+    })
+    .join('');
+}
+
+function initAdminPage() {
+  const leadBody = document.querySelector('#adminLeadBody');
+  const ambassadorBody = document.querySelector('#adminAmbassadorBody');
+  const payoutBody = document.querySelector('#adminPayoutBody');
+  if (!leadBody || !ambassadorBody || !payoutBody) return;
+
+  renderAdmin();
+
+  leadBody.addEventListener('change', (event) => {
+    const statusInput = event.target.closest('.admin-status');
+    if (statusInput) {
+      const lead = demoDb.leads.find((item) => item.id === statusInput.dataset.id);
+      lead.status = statusInput.value;
+      if (lead.status !== 'Won') {
+        lead.dealValue = 0;
+        lead.commissionAmount = 0;
+      }
+      renderAdmin();
+      return;
+    }
+
+    const dealInput = event.target.closest('.deal-input');
+    if (dealInput) {
+      const lead = demoDb.leads.find((item) => item.id === dealInput.dataset.id);
+      lead.dealValue = Number(dealInput.value || 0);
+      lead.commissionAmount = Math.round(lead.dealValue * DEFAULT_COMMISSION_RATE);
+      renderAdmin();
+    }
+  });
+
+  ambassadorBody.addEventListener('change', (event) => {
+    const statusSelect = event.target.closest('.ambassador-status');
+    if (!statusSelect) return;
+    const ambassador = demoDb.ambassadors.find((item) => item.id === statusSelect.dataset.id);
+    ambassador.status = statusSelect.value;
+    renderAdmin();
+  });
+
+  payoutBody.addEventListener('click', (event) => {
+    const paidButton = event.target.closest('.mark-paid');
+    if (!paidButton) return;
+    const ambassadorId = paidButton.dataset.id;
+    const totals = calculateAmbassadorTotals(ambassadorId);
+    demoDb.payouts.push({ ambassadorId, paidOut: totals.available });
+    renderAdmin();
   });
 }
 
-function initAmbassadorPage() {
+function renderAmbassadorDashboard() {
+  const totalLeads = document.querySelector('#metricLeads');
+  const totalWon = document.querySelector('#metricWon');
+  const totalCommission = document.querySelector('#metricCommission');
+  const availablePayout = document.querySelector('#metricAvailable');
   const leadList = document.querySelector('#leadList');
-  if (!leadList) return;
 
-  let leadFilter = 'Alle';
-  let selectedLeadId = demoDb.leads[0]?.id;
+  if (!totalLeads || !totalWon || !totalCommission || !availablePayout || !leadList) return;
 
-  const renderKpis = () => {
-    const statuses = ['Godkjent', 'Møte booket'];
-    document.querySelectorAll('.clickable-kpi').forEach((btn) => {
-      const status = btn.dataset.status;
-      const count = demoDb.leads.filter((lead) => status === 'Alle' || lead.status === status).length;
-      btn.querySelector('.kpi').textContent = count;
-      btn.classList.toggle('active', leadFilter === status);
-    });
+  const ambassadorId = 'AMB123';
+  const totals = calculateAmbassadorTotals(ambassadorId);
+  const leads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassadorId);
 
-    statuses.forEach((status) => {
-      const stat = document.querySelector(`[data-stat="${status}"]`);
-      if (stat) stat.textContent = demoDb.leads.filter((lead) => lead.status === status).length;
-    });
-  };
+  totalLeads.textContent = String(totals.leads);
+  totalWon.textContent = String(totals.won);
+  totalCommission.textContent = currency(totals.earned);
+  availablePayout.textContent = currency(totals.available);
 
-  const renderLeadList = () => {
-    const rows = demoDb.leads.filter((lead) => leadFilter === 'Alle' || lead.status === leadFilter);
-    leadList.innerHTML =
-      rows
-        .map(
-          (lead) => `
-      <tr>
-        <td><button class="btn-ghost open-detail" data-id="${lead.id}">${lead.company}</button></td>
-        <td>${lead.status}</td>
-        <td>${currency(lead.value)}</td>
-        <td>${lead.commission}%</td>
-        <td><button class="btn-ghost change-status" data-id="${lead.id}">Endre status</button></td>
-      </tr>
-    `
-        )
-        .join('') || '<tr><td colspan="5">Ingen leads i dette filteret.</td></tr>';
-  };
-
-  const renderDetail = () => {
-    const lead = demoDb.leads.find((item) => item.id === selectedLeadId);
-    if (!lead) return;
-    document.querySelector('#detailCompany').textContent = lead.company;
-    document.querySelector('#detailValue').value = lead.value;
-    document.querySelector('#detailStatus').value = lead.status;
-    document.querySelector('#detailCommission').textContent = currency((lead.value * lead.commission) / 100);
-    document.querySelector('#detailPct').value = lead.commission;
-  };
-
-  renderKpis();
-  renderLeadList();
-  renderDetail();
-  initAmbassadorCharts();
-
-  document.querySelectorAll('.clickable-kpi').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      leadFilter = btn.dataset.status;
-      renderKpis();
-      renderLeadList();
-    });
-  });
-
-  document.querySelectorAll('.pipeline-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.pipeline-tab').forEach((item) => item.classList.remove('active'));
-      tab.classList.add('active');
-      leadFilter = tab.dataset.status;
-      renderKpis();
-      renderLeadList();
-    });
-  });
-
-  leadList.addEventListener('click', (event) => {
-    const detailBtn = event.target.closest('.open-detail');
-    const statusBtn = event.target.closest('.change-status');
-
-    if (detailBtn) {
-      selectedLeadId = Number(detailBtn.dataset.id);
-      renderDetail();
-    }
-
-    if (statusBtn) {
-      selectedLeadId = Number(statusBtn.dataset.id);
-      renderDetail();
-      document.querySelector('#detailStatus').focus();
-    }
-  });
-
-  document.querySelector('#detailStatus').addEventListener('change', (event) => {
-    const lead = demoDb.leads.find((item) => item.id === selectedLeadId);
-    lead.status = event.target.value;
-    renderKpis();
-    renderLeadList();
-  });
-
-  const calculateCommission = () => {
-    const lead = demoDb.leads.find((item) => item.id === selectedLeadId);
-    lead.value = Number(document.querySelector('#detailValue').value || 0);
-    lead.commission = Number(document.querySelector('#detailPct').value || 0);
-    document.querySelector('#detailCommission').textContent = currency((lead.value * lead.commission) / 100);
-    renderLeadList();
-  };
-
-  document.querySelector('#detailValue').addEventListener('input', calculateCommission);
-  document.querySelector('#detailPct').addEventListener('input', calculateCommission);
+  leadList.innerHTML = leads
+    .map(
+      (lead) => `<tr><td>${lead.company}</td><td>${lead.status}</td><td>${currency(lead.dealValue)}</td><td>${currency(lead.commissionAmount)}</td></tr>`
+    )
+    .join('');
 
   const copyBtn = document.querySelector('#copyLink');
-  copyBtn.addEventListener('click', async () => {
-    await navigator.clipboard.writeText('https://animer.no/a/MINA-2026');
+  copyBtn?.addEventListener('click', async () => {
+    await navigator.clipboard.writeText('https://animer.no/a/AMB123');
     copyBtn.textContent = 'Lenke kopiert ✓';
     setTimeout(() => {
       copyBtn.textContent = 'Kopier lenke';
     }, 1200);
   });
-
-  document.querySelector('#openPayout').addEventListener('click', () => document.querySelector('#payoutPanel').classList.add('open'));
-  document.querySelector('#closePayout').addEventListener('click', () => document.querySelector('#payoutPanel').classList.remove('open'));
-  document.querySelector('#openInvoice').addEventListener('click', () => document.querySelector('#invoiceModal').classList.add('open'));
-  document.querySelector('#closeInvoice').addEventListener('click', () => document.querySelector('#invoiceModal').classList.remove('open'));
 }
 
-function initAdminPage() {
-  const adminLeadBody = document.querySelector('#adminLeadBody');
-  if (!adminLeadBody) return;
+function initLandingPage() {
+  const leadForm = document.querySelector('#leadForm');
+  const leadMessage = document.querySelector('#leadMessage');
+  if (!leadForm || !leadMessage) return;
 
-  const renderAdminLeads = () => {
-    adminLeadBody.innerHTML = demoDb.leads
-      .map(
-        (lead) => `
-      <tr>
-        <td>${lead.company}</td>
-        <td>${lead.ambassador}</td>
-        <td>
-          <select class="admin-status" data-id="${lead.id}">
-            ${['Åpen', 'Møte booket', 'Tilbud sendt', 'Godkjent', 'Avslag']
-              .map((status) => `<option ${lead.status === status ? 'selected' : ''}>${status}</option>`)
-              .join('')}
-          </select>
-        </td>
-        <td>${currency((lead.value * lead.commission) / 100)}</td>
-      </tr>
-    `
-      )
-      .join('');
-  };
+  const refCookie = getCookie('ref');
+  const attributionElement = document.querySelector('#attributionInfo');
+  if (attributionElement) {
+    attributionElement.textContent = refCookie
+      ? `Aktiv attribution-cookie: ${refCookie} (first click, 90 dager)`
+      : 'Ingen attribution-cookie funnet.';
+  }
 
-  const renderAmbassadors = () => {
-    const wrapper = document.querySelector('#ambassadorList');
-    wrapper.innerHTML = demoDb.ambassadors
-      .map(
-        (ambassador) => `
-      <div class="list-item">
-        <strong>${ambassador.name}</strong>
-        <div class="muted">Status: <span>${ambassador.status}</span></div>
-        <label>Invitasjonsgrense
-          <input class="invite-limit" type="number" min="0" data-id="${ambassador.id}" value="${ambassador.inviteLimit}" />
-        </label>
-        <div class="row-actions">
-          <button class="btn-primary save-invite" data-id="${ambassador.id}">Lagre invitasjonsgrense</button>
-          <button class="toggle ${ambassador.status === 'Aktiv' ? 'active' : ''}" data-id="${ambassador.id}" aria-label="Bytt status"></button>
-        </div>
-      </div>
-    `
-      )
-      .join('');
-  };
+  leadForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(leadForm);
+    const payload = {
+      name: String(formData.get('name') || ''),
+      company: String(formData.get('company') || ''),
+      email: String(formData.get('email') || '')
+    };
 
-  const renderLog = () => {
-    const log = document.querySelector('#changeLog');
-    log.innerHTML = demoDb.commissionLog.map((entry) => `<li>${entry}</li>`).join('') || '<li>Ingen endringer ennå.</li>';
-  };
-
-  renderAdminLeads();
-  renderAmbassadors();
-  renderLog();
-  initAmbassadorCharts();
-
-  adminLeadBody.addEventListener('change', (event) => {
-    const selected = event.target.closest('.admin-status');
-    if (!selected) return;
-    const lead = demoDb.leads.find((item) => item.id === Number(selected.dataset.id));
-    lead.status = selected.value;
-  });
-
-  document.querySelector('#saveCommission').addEventListener('click', () => {
-    const leadId = Number(document.querySelector('#commissionLead').value);
-    const percent = Number(document.querySelector('#commissionPct').value);
-    const comment = document.querySelector('#commissionComment').value.trim();
-    const message = document.querySelector('#commissionMsg');
-
-    if (!comment) {
-      message.textContent = 'Kommentar er påkrevd.';
-      message.style.color = 'var(--danger)';
+    const result = createLead(payload);
+    if (!result.created) {
+      leadMessage.textContent = result.reason;
+      leadMessage.style.color = 'var(--warning)';
       return;
     }
 
-    const lead = demoDb.leads.find((item) => item.id === leadId);
-    const oldPercent = lead.commission;
-    lead.commission = percent;
-
-    demoDb.commissionLog.unshift(
-      `${new Date().toLocaleString('nb-NO')}: ${lead.company} provisjon endret ${oldPercent}% → ${percent}%. Kommentar: ${comment}`
-    );
-
-    message.textContent = 'Provisjon er oppdatert og loggført.';
-    message.style.color = 'var(--success)';
-    renderAdminLeads();
-    renderLog();
-  });
-
-  document.querySelector('#ambassadorList').addEventListener('click', (event) => {
-    const toggleBtn = event.target.closest('.toggle');
-    const saveInviteBtn = event.target.closest('.save-invite');
-
-    if (toggleBtn) {
-      const ambassador = demoDb.ambassadors.find((item) => item.id === Number(toggleBtn.dataset.id));
-      ambassador.status = ambassador.status === 'Aktiv' ? 'Pauset' : 'Aktiv';
-      renderAmbassadors();
-      return;
-    }
-
-    if (saveInviteBtn) {
-      const ambassador = demoDb.ambassadors.find((item) => item.id === Number(saveInviteBtn.dataset.id));
-      const input = document.querySelector(`.invite-limit[data-id="${ambassador.id}"]`);
-      ambassador.inviteLimit = Number(input.value || 0);
-      demoDb.commissionLog.unshift(
-        `${new Date().toLocaleString('nb-NO')}: Invitasjonsgrense oppdatert for ${ambassador.name} til ${ambassador.inviteLimit}.`
-      );
-      renderAmbassadors();
-      renderLog();
-    }
+    leadMessage.textContent = `Lead lagret. ambassadorId=${result.lead.ambassadorId || 'null'} status=open`;
+    leadMessage.style.color = 'var(--success)';
+    leadForm.reset();
   });
 }
 
+trackReferralFromUrl();
+handleRedirectLoginResult();
 initNavbar();
-initAmbassadorPage();
+initLandingPage();
 initAdminPage();
+renderAmbassadorDashboard();
 
-initFirebaseAuth();
+const loginGoogleBtn = document.querySelector('#loginGoogle');
+const registerGoogleBtn = document.querySelector('#registerGoogle');
+const loginFacebookBtn = document.querySelector('#loginFacebook');
+const registerFacebookBtn = document.querySelector('#registerFacebook');
+
+loginGoogleBtn?.addEventListener('click', window.loginWithGoogle);
+registerGoogleBtn?.addEventListener('click', window.loginWithGoogle);
+
+const facebookMessage = () => setAuthMessage('Facebook er ikke med i MVP. Bruk Google-login.');
+loginFacebookBtn?.addEventListener('click', facebookMessage);
+registerFacebookBtn?.addEventListener('click', facebookMessage);

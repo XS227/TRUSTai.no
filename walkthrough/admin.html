@@ -3,18 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Superadministrasjon</title>
+    <title>Superadmin MVP</title>
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div class="app-layout">
       <aside class="sidebar">
         <div class="brand">ANIMER</div>
         <nav class="main-nav">
-          <a href="index.html">Landingsside</a>
+          <a href="index.html">Landing + Tracking</a>
           <a href="ambassador.html">Ambassadør</a>
-          <a href="admin.html" class="active">Superadministrator</a>
+          <a href="admin.html" class="active">Superadmin</a>
           <a href="payout-support.html">Støtte</a>
         </nav>
       </aside>
@@ -22,66 +21,41 @@
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle" aria-expanded="false" aria-label="Åpne meny">☰</button>
-            <h1>Superadministrasjon</h1>
+            <h1>Superadmin (MVP)</h1>
           </div>
-          <span class="role-pill">Styring og kontroll</span>
+          <span class="role-pill">Leads, ambassadører, utbetaling</span>
         </header>
 
         <main class="page">
           <section class="card">
-            <h2>Leadliste med statusvalg</h2>
+            <h2>A) Leads</h2>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Lead</th><th>Ambassadør</th><th>Status</th><th>Provisjon</th></tr></thead>
+                <thead><tr><th>Firma</th><th>Ambassadør</th><th>Status</th><th>Verdi</th><th>Provisjon</th></tr></thead>
                 <tbody id="adminLeadBody"></tbody>
+              </table>
+            </div>
+            <p class="muted">Når status settes til <strong>Won</strong>, kan du legge inn verdi og provisjon beregnes med 10%.</p>
+          </section>
+
+          <section class="card">
+            <h2>B) Ambassadører</h2>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Navn</th><th>Status</th><th>Leads</th><th>Omsetning</th><th>Provisjon</th></tr></thead>
+                <tbody id="adminAmbassadorBody"></tbody>
               </table>
             </div>
           </section>
 
-          <section class="grid chart-grid">
-            <article class="chart-card">
-              <h3>Inntekt siste 6 måneder</h3>
-              <div class="chart-wrap"><canvas id="incomeChart"></canvas></div>
-            </article>
-            <article class="chart-card">
-              <h3>Tilbud sendt per måned</h3>
-              <div class="chart-wrap"><canvas id="offerChart"></canvas></div>
-            </article>
-            <article class="chart-card">
-              <h3>Andel per kanal</h3>
-              <div class="chart-wrap"><canvas id="channelChart"></canvas></div>
-            </article>
-          </section>
-
-          <section class="split">
-            <article class="card">
-              <h2>Endre provisjon</h2>
-              <div class="form-grid">
-                <label>Lead
-                  <select id="commissionLead">
-                    <option value="1">Elkjøp</option><option value="2">Power Norge</option><option value="3">XXL Sport</option><option value="4">Bohus</option>
-                  </select>
-                </label>
-                <label>Ny provisjon i prosent
-                  <input id="commissionPct" type="number" value="12" min="0" max="100" />
-                </label>
-                <label>Kommentar (påkrevd)
-                  <textarea id="commissionComment" rows="3" placeholder="Forklar hvorfor provisjon endres"></textarea>
-                </label>
-                <button id="saveCommission" class="btn-primary">Lagre endring</button>
-                <p id="commissionMsg" class="muted"></p>
-              </div>
-            </article>
-            <article class="card">
-              <h2>Endringslogg</h2>
-              <ul id="changeLog"></ul>
-            </article>
-          </section>
-
           <section class="card">
-            <h2>Ambassadørliste og invitasjoner</h2>
-            <p class="muted">Superadministrator kan aktivere eller sette på pause ambassadører og justere antall invitasjoner når som helst.</p>
-            <div id="ambassadorList"></div>
+            <h2>C) Utbetaling</h2>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Ambassadør</th><th>Opptjent</th><th>Utbetalt</th><th>Tilgjengelig</th><th>Handling</th></tr></thead>
+                <tbody id="adminPayoutBody"></tbody>
+              </table>
+            </div>
           </section>
         </main>
         <footer class="site-footer">© Levert av Setai.no</footer>

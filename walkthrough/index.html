@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Animer landingsside</title>
+    <title>Animer MVP</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,9 +11,9 @@
       <aside class="sidebar">
         <div class="brand">ANIMER</div>
         <nav class="main-nav">
-          <a href="index.html" class="active">Landingsside</a>
+          <a href="index.html" class="active">Landing + Tracking</a>
           <a href="ambassador.html">Ambassadør</a>
-          <a href="admin.html">Superadministrator</a>
+          <a href="admin.html">Superadmin</a>
           <a href="payout-support.html">Støtte</a>
         </nav>
       </aside>
@@ -21,109 +21,49 @@
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle" aria-expanded="false" aria-label="Åpne meny">☰</button>
-            <h1>Velkommen til Animer</h1>
+            <h1>Animer MVP – attribution først</h1>
           </div>
-          <span class="role-pill">Innlogging og registrering</span>
+          <span class="role-pill">Google login + lead attribution</span>
         </header>
+
         <main class="page">
           <section class="card">
-            <h2>Landingsside</h2>
-            <p>
-              Samle ambassadører, leads og oppfølging på ett sted. Velg hvordan du vil komme i gang og gå videre til riktig
-              visning.
-            </p>
+            <h2>1) Ambassadør onboarding</h2>
+            <p>Google login oppretter ambassadør i Firestore med status <strong>pending</strong> for manuell godkjenning.</p>
+            <div class="social-buttons">
+              <button id="loginGoogle" class="social-auth-btn google-btn" type="button">Fortsett med Google</button>
+              <button id="loginFacebook" class="social-auth-btn facebook-btn" type="button">Facebook (ikke i MVP)</button>
+            </div>
+            <p id="authMessage" class="muted" aria-live="polite"></p>
           </section>
 
-          <section class="grid auth-grid">
-            <article class="card">
-              <h3>Logg inn</h3>
-              <div class="form-grid">
-                <label>E-postadresse
-                  <input type="email" placeholder="Skriv e-postadresse" />
-                </label>
-                <label>Passord
-                  <input type="password" placeholder="Skriv passord" />
-                </label>
-                <button class="btn-primary">Logg inn med e-post</button>
-              </div>
-              <p class="muted">Du kan også logge inn med:</p>
-              <div class="social-buttons">
-                <button id="loginGoogle" class="social-auth-btn google-btn" type="button">
-                  <span class="social-auth-btn__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18">
-                      <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.3-1.6 3.8-5.4 3.8-3.2 0-5.9-2.7-5.9-6s2.7-6 5.9-6c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.6 14.6 2.8 12 2.8 6.9 2.8 2.8 7 2.8 12s4.1 9.2 9.2 9.2c5.3 0 8.8-3.7 8.8-8.9 0-.6-.1-1.1-.2-1.5H12z"/>
-                    </svg>
-                  </span>
-                  <span>Fortsett med Google</span>
-                </button>
-                <button id="loginFacebook" class="social-auth-btn facebook-btn" type="button">
-                  <span class="social-auth-btn__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18">
-                      <path fill="#1877F2" d="M24 12C24 5.4 18.6 0 12 0S0 5.4 0 12c0 6 4.4 11 10.1 11.9v-8.4H7v-3.5h3.1V9.4c0-3 1.8-4.7 4.6-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4C19.6 23 24 18 24 12z"/>
-                    </svg>
-                  </span>
-                  <span>Fortsett med Facebook</span>
-                </button>
-              </div>
-            </article>
-
-            <article class="card">
-              <h3>Registrer ny bruker</h3>
-              <div class="social-buttons social-buttons--stack">
-                <button id="toggleRegisterEmail" class="btn-primary" type="button">Registrer med e-post</button>
-                <button id="registerGoogle" class="social-auth-btn google-btn" type="button">
-                  <span class="social-auth-btn__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18">
-                      <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.3-1.6 3.8-5.4 3.8-3.2 0-5.9-2.7-5.9-6s2.7-6 5.9-6c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.6 14.6 2.8 12 2.8 6.9 2.8 2.8 7 2.8 12s4.1 9.2 9.2 9.2c5.3 0 8.8-3.7 8.8-8.9 0-.6-.1-1.1-.2-1.5H12z"/>
-                    </svg>
-                  </span>
-                  <span>Fortsett med Google</span>
-                </button>
-                <button id="registerFacebook" class="social-auth-btn facebook-btn" type="button">
-                  <span class="social-auth-btn__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18">
-                      <path fill="#1877F2" d="M24 12C24 5.4 18.6 0 12 0S0 5.4 0 12c0 6 4.4 11 10.1 11.9v-8.4H7v-3.5h3.1V9.4c0-3 1.8-4.7 4.6-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4C19.6 23 24 18 24 12z"/>
-                    </svg>
-                  </span>
-                  <span>Fortsett med Facebook</span>
-                </button>
-              </div>
-              <div id="registerEmailFields" class="form-grid is-hidden" aria-hidden="true">
-                <label>Navn
-                  <input type="text" placeholder="Skriv fullt navn" />
-                </label>
-                <label>E-postadresse
-                  <input type="email" placeholder="Skriv e-postadresse" />
-                </label>
-                <label>Passord
-                  <input type="password" placeholder="Lag passord" />
-                </label>
-                <button class="btn-primary" type="button">Opprett konto</button>
-              </div>
-            </article>
+          <section class="card">
+            <h2>2) Tracking</h2>
+            <p>Test referral-klikk via <code>?ref=AMB123</code>. Systemet lagrer klikk og setter cookie i 90 dager.</p>
+            <p id="attributionInfo" class="muted"></p>
+            <p class="muted">Eksempel: <a href="index.html?ref=AMB123&target=index.html">index.html?ref=AMB123</a></p>
           </section>
 
-          <p id="authMessage" class="muted" aria-live="polite"></p>
-
-          <section class="grid">
-            <article class="card">
-              <h3>Gå til ambassadørvisning</h3>
-              <p>Se leads, delingsforslag, inntekt og utbetaling.</p>
-              <a href="ambassador.html">Åpne ambassadørside →</a>
-            </article>
-            <article class="card">
-              <h3>Gå til superadministrator</h3>
-              <p>Juster provisjon, invitasjonsgrenser og få oversikt med diagrammer.</p>
-              <a href="admin.html">Åpne superadministratorside →</a>
-            </article>
+          <section class="card">
+            <h2>3) Lead capture (viktigst)</h2>
+            <form id="leadForm" class="form-grid">
+              <label>Navn
+                <input name="name" required />
+              </label>
+              <label>Firma
+                <input name="company" required />
+              </label>
+              <label>E-post
+                <input name="email" type="email" required />
+              </label>
+              <button class="btn-primary" type="submit">Lagre lead</button>
+              <p id="leadMessage" class="muted" aria-live="polite"></p>
+            </form>
           </section>
         </main>
         <footer class="site-footer">© Levert av Setai.no</footer>
       </div>
     </div>
-    <script>
-      console.log('Script starter');
-    </script>
     <script type="module" src="app.js"></script>
   </body>
 </html>
