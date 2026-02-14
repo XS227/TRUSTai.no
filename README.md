@@ -21,6 +21,56 @@ Denne feilen betyr at domenet brukeren logger inn fra ikke er whitelistet i Fire
 - Bekreft at `authDomain` i Firebase-konfigurasjonen peker til riktig Firebase-prosjekt.
 - Kontroller at OAuth-provider (Google) er aktivert i **Authentication → Sign-in method**.
 
+## Feilsøking: `The requested action is invalid` på `/__/auth/handler`
+
+Hvis popup/redirect stopper på en URL som:
+
+`https://animer-ambassador-mvp.firebaseapp.com/__/auth/handler?...`
+
+og viser **"The requested action is invalid"**, er det vanligvis en konfigurasjonsmismatch i Firebase Auth-flyten.
+
+### Vanlige årsaker
+
+1. **`apiKey` og `authDomain` tilhører ikke samme Firebase-prosjekt**
+   - I denne koden skal disse høre sammen:
+     - `apiKey: AIzaSyBERElRl3D5EHzKme6to5w2nTZFAFb8ySQ`
+     - `authDomain: animer-ambassador-mvp.firebaseapp.com`
+   - Hvis én av dem er byttet ut fra et annet prosjekt, vil handleren feile.
+
+2. **Domenet som starter login er ikke autorisert**
+   - Legg til både:
+     - `setai.no`
+     - `www.setai.no` (hvis brukt)
+   - under **Authentication → Settings → Authorized domains**.
+
+3. **API-nøkkel er for strengt begrenset (HTTP referrer restrictions)**
+   - Hvis API key-restriksjoner er på i Google Cloud, må referrers inkludere både produksjonsdomene og Firebase auth-domain.
+   - For denne flyten må minst følgende være tillatt:
+     - `https://setai.no/*`
+     - `https://www.setai.no/*` (hvis brukt)
+     - `https://animer-ambassador-mvp.firebaseapp.com/*`
+
+4. **Google provider ikke aktivert i Firebase Auth**
+   - Sjekk **Authentication → Sign-in method → Google**.
+
+### Konkrete sjekkpunkter for denne repoen
+
+- Bekreft Firebase-konfigen i `walkthrough/app.js`.
+- Deploy på nytt etter endringer i Auth-oppsett (Hosting + cache kan gi gamle verdier i klienten).
+- Test i inkognito uten gamle auth-cookies/session for å utelukke stale popup-state.
+
+### Hurtigdiagnose i nettleser
+
+Kjør i DevTools Console på siden før du trykker "Logg inn":
+
+```js
+console.log('origin', location.origin);
+console.log('host', location.host);
+console.log('firebaseAuthDomain', 'animer-ambassador-mvp.firebaseapp.com');
+```
+
+Hvis `origin` ikke matcher et domene som er autorisert i Firebase, vil login-flyten feile i handler-steget.
+
 ## Mål med løsningen
 
 Løsningen støtter to hovedroller:
