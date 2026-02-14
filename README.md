@@ -2,6 +2,25 @@
 
 Digital plattform for ambassadørdrevet lead-generering, salgspipeline og provisjonshåndtering for Animer.no.
 
+## Feilsøking: `Firebase: Error (auth/unauthorized-domain)`
+
+Denne feilen betyr at domenet brukeren logger inn fra ikke er whitelistet i Firebase Authentication.
+
+### Slik fikser du det
+
+1. Åpne **Firebase Console** for prosjektet ditt.
+2. Gå til **Authentication → Settings → Authorized domains**.
+3. Legg til domenet som brukes i produksjon, f.eks.:
+   - `setai.no`
+   - (ev.) `www.setai.no`
+4. Hvis appen ligger på en undermappe (`/animer/2/`), trenger du fortsatt bare domenet (ikke hele URL-en).
+5. Lagre, deploy på nytt ved behov, og test innlogging igjen.
+
+### Ekstra sjekk
+
+- Bekreft at `authDomain` i Firebase-konfigurasjonen peker til riktig Firebase-prosjekt.
+- Kontroller at OAuth-provider (Google) er aktivert i **Authentication → Sign-in method**.
+
 ## Mål med løsningen
 
 Løsningen støtter to hovedroller:
