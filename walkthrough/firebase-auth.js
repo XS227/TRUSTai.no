@@ -15,9 +15,22 @@ function hasValidFirebaseConfig(config) {
   return Object.values(config).every((value) => value && !String(value).startsWith('DIN_'));
 }
 
+
+function getDomainVariants(hostname) {
+  const host = String(hostname || '').trim().toLowerCase();
+  if (!host) return [];
+
+  if (host.startsWith('www.')) {
+    return [host, host.replace(/^www\./, '')];
+  }
+
+  return [host, `www.${host}`];
+}
+
 function getFriendlyAuthError(error) {
   if (error?.code === 'auth/unauthorized-domain') {
-    return `Innlogging feilet: Domenet ${window.location.hostname} er ikke godkjent i Firebase Authentication. Legg det til i Firebase Console → Authentication → Settings → Authorized domains.`;
+    const domainHints = getDomainVariants(window.location.hostname).join(' og ');
+    return `Innlogging feilet: Du logger inn fra ${window.location.hostname}, men dette domenet er ikke godkjent i Firebase Authentication. Legg til ${domainHints} i Firebase Console → Authentication → Settings → Authorized domains.`;
   }
 
   if (error?.code === 'auth/operation-not-allowed') {
