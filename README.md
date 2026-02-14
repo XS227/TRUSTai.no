@@ -482,3 +482,10 @@ For å vise sidene lokalt:
 python3 -m http.server 8000
 # åpne http://localhost:8000/walkthrough/
 ```
+
+## Nye leveranser (ren arkitektur + MVP)
+
+- Firestore datamodell (ren arkitektur): `docs/firestore-data-model.md`
+- Cloud Functions for automatisk provisjonering og økonomiflyt: `functions/src/index.js`
+- Økonomilogikk (tilgjengelig / utbetalt / historikk): `docs/commission-economy-logic.md`
+- MVP-lanseringsplan: `docs/mvp-launch-plan.md`
