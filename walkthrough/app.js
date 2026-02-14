@@ -79,9 +79,54 @@ function initNavbar() {
   });
 }
 
+function getReferralData() {
+  try {
+    const raw = localStorage.getItem(REFERRAL_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.ref || !parsed?.capturedAt) return null;
+    return parsed;
+  } catch (error) {
+    return null;
+  }
+}
+
+function isAttributionActive(referralData) {
+  if (!referralData?.capturedAt) return false;
+  const capturedAt = new Date(referralData.capturedAt).getTime();
+  if (!capturedAt) return false;
+  const ageMs = Date.now() - capturedAt;
+  return ageMs <= ATTRIBUTION_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function getAmbassadorReferrer() {
+  const localRef = getReferralData();
+  if (isAttributionActive(localRef)) return localRef.ref;
+  const cookieRef = getCookie(REFERRAL_COOKIE_KEY);
+  return cookieRef || null;
+}
+
+function persistReferral(ref) {
+  const referralData = {
+    ref,
+    capturedAt: new Date().toISOString(),
+    attribution: 'first-click',
+    expiresInDays: ATTRIBUTION_WINDOW_DAYS
+  };
+
+  localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(referralData));
+  localStorage.setItem(REFERRAL_COOKIE_KEY, ref);
+  setCookie(REFERRAL_COOKIE_KEY, ref, ATTRIBUTION_WINDOW_DAYS);
+}
+
+function getReferralFromPath(pathname) {
+  const match = String(pathname || '').match(/\/a\/([^/?#]+)/i);
+  return match?.[1] ? decodeURIComponent(match[1]).trim().toUpperCase() : null;
+}
+
 function trackReferralFromUrl() {
   const url = new URL(window.location.href);
-  const ref = (url.searchParams.get('ref') || '').trim().toUpperCase();
+  const ref = (url.searchParams.get('ref') || getReferralFromPath(url.pathname) || '').trim().toUpperCase();
   const target = url.searchParams.get('target') || 'ambassador.html';
   if (!ref) return;
 
@@ -156,9 +201,11 @@ function createLead({ name, company, email }) {
     company,
     email,
     ambassadorId,
-    status: 'Open',
+    status: 'open',
     dealValue: 0,
     commissionAmount: 0,
+    value: 0,
+    commissionRate: DEFAULT_COMMISSION_RATE,
     createdAt: new Date().toISOString()
   };
   demoDb.leads.unshift(newLead);
@@ -189,6 +236,15 @@ function initLandingPage() {
     demoDb.userProfile.provider = 'E-post';
     registerMessage.textContent = 'Konto registrert lokalt i MVP.';
     syncProfileUi();
+  });
+}
+
+function getFilteredLeads() {
+  return demoDb.leads.filter((lead) => {
+    const statusOk = adminState.leadStatusFilter === 'all' || lead.status === adminState.leadStatusFilter;
+    const ambassador = lead.ambassadorId || 'Ingen';
+    const ambassadorOk = adminState.ambassadorFilter === 'all' || ambassador === adminState.ambassadorFilter;
+    return statusOk && ambassadorOk;
   });
 }
 
@@ -237,6 +293,7 @@ function renderAdmin() {
           <select class="ambassador-status" data-id="${ambassador.id}">
             ${AMBASSADOR_STATUSES.map((status) => `<option value="${status}" ${status === ambassador.status ? 'selected' : ''}>${status}</option>`).join('')}
           </select>
+          <span class="badge ${statusBadge}">${ambassador.status}</span>
         </td>
       </tr>`;
   }).join('');
@@ -245,6 +302,44 @@ function renderAdmin() {
     const totals = calculateAmbassadorTotals(ambassador.id);
     return `<tr><td>${ambassador.name}</td><td>${currency(totals.earned)}</td><td>${currency(totals.paidOut)}</td><td>${currency(totals.available)}</td><td><button class="btn-secondary mark-paid" data-id="${ambassador.id}">Marker utbetalt</button></td></tr>`;
   }).join('');
+}
+
+function recalculateLeadCommission(lead) {
+  const normalizedStatus = String(lead.status || '').toLowerCase();
+  const approved = normalizedStatus === 'approved' || normalizedStatus === 'won';
+  const value = Number(lead.dealValue ?? lead.value ?? 0);
+  const commissionRate = Number(lead.commissionRate ?? DEFAULT_COMMISSION_RATE);
+
+  if (!approved) {
+    lead.dealValue = 0;
+    lead.value = 0;
+    lead.commissionAmount = 0;
+    return;
+  }
+
+  lead.dealValue = value;
+  lead.value = value;
+  lead.commissionRate = commissionRate;
+  lead.commissionAmount = Math.round(value * commissionRate);
+}
+
+function openStatusModal(leadId) {
+  const backdrop = document.querySelector('#statusModalBackdrop');
+  const select = document.querySelector('#statusModalSelect');
+  const message = document.querySelector('#statusModalMessage');
+  const lead = demoDb.leads.find((item) => item.id === leadId);
+  if (!backdrop || !select || !lead) return;
+
+  adminState.pendingStatusLeadId = leadId;
+  select.innerHTML = LEAD_STATUSES.map((status) => `<option value="${status}" ${status === lead.status ? 'selected' : ''}>${status}</option>`).join('');
+  if (message) message.textContent = `Endre status for ${lead.company}.`;
+  backdrop.classList.add('open');
+}
+
+function closeStatusModal() {
+  const backdrop = document.querySelector('#statusModalBackdrop');
+  adminState.pendingStatusLeadId = null;
+  backdrop?.classList.remove('open');
 }
 
 function initAdminPage() {
@@ -339,6 +434,26 @@ function initAdminPage() {
     modalBackdrop?.classList.remove('open');
     renderAdmin();
   });
+
+  closeModalButton?.addEventListener('click', closeStatusModal);
+  modalBackdrop?.addEventListener('click', (event) => {
+    if (event.target === modalBackdrop) closeStatusModal();
+  });
+
+  saveModalButton?.addEventListener('click', () => {
+    if (!adminState.pendingStatusLeadId || !modalSelect) return;
+    const lead = demoDb.leads.find((item) => item.id === adminState.pendingStatusLeadId);
+    lead.status = modalSelect.value;
+    recalculateLeadCommission(lead);
+    closeStatusModal();
+    renderAdmin();
+  });
+}
+
+function getAmbassadorLeads(ambassadorId) {
+  const leads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassadorId);
+  if (ambassadorState.leadFilter === 'all') return leads;
+  return leads.filter((lead) => lead.status === ambassadorState.leadFilter);
 }
 
 function getAmbassadorLeads(ambassadorId) {
@@ -484,6 +599,27 @@ function initInvoicePage() {
     render();
     message.textContent = 'Faktura lastet opp (lokalt i MVP).';
     form.reset();
+  });
+}
+
+
+function subscribeToAmbassadorLeads() {
+  if (!window.location.pathname.includes('ambassador')) return;
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) return;
+
+    const leadsQuery = query(collection(db, 'leads'), where('ambassadorId', '==', user.uid));
+    onSnapshot(leadsQuery, (snapshot) => {
+      const firestoreLeads = snapshot.docs.map((docSnapshot) => ({
+        id: docSnapshot.id,
+        ...docSnapshot.data()
+      }));
+
+      if (!firestoreLeads.length) return;
+      demoDb.leads = firestoreLeads;
+      renderAmbassadorDashboard();
+    });
   });
 }
 

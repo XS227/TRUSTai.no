@@ -1,4 +1,4 @@
-export const LEAD_STATUSES = ['Open', 'Meeting', 'Offer Sent', 'Won', 'Lost'];
+export const LEAD_STATUSES = ['open', 'meeting', 'offer_sent', 'approved', 'won', 'lost'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
 
 export const demoDb = {
@@ -50,6 +50,8 @@ export const demoDb = {
       ambassadorId: 'AMB123',
       status: 'Offer Sent',
       dealValue: 0,
+      value: 0,
+      commissionRate: 0.1,
       commissionAmount: 0,
       createdAt: '2026-02-03T09:00:00.000Z'
     },
@@ -115,7 +117,8 @@ export function calculateAmbassadorTotals(ambassadorId) {
 
   return {
     leads: ambassadorLeads.length,
-    won: wonLeads.length,
+    won: approvedLeads.length,
+    pipeline: pipelineLeads.length,
     revenue,
     earned,
     paidOut,

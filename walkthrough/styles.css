@@ -29,6 +29,7 @@ body[data-theme='dark'] {
 }
 
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui;
@@ -57,7 +58,6 @@ body {
 .content { display: flex; flex-direction: column; min-width: 0; }
 .topbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 12px;
   padding: 14px 22px;
