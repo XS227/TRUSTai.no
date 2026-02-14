@@ -3,6 +3,7 @@ import { currency, demoDb } from './data-store.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
 import { getAnalytics } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBERElRl3D5EHzKme6to5w2nTZFAFb8ySQ',
@@ -17,15 +18,45 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 getAnalytics(firebaseApp);
 const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
 
 window.loginWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
+  const authMessage = document.querySelector('#authMessage');
+
   try {
-    await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    const { user } = result;
+
+    const ambassadorRef = doc(db, 'ambassadors', user.uid);
+    const ambassadorSnap = await getDoc(ambassadorRef);
+
+    if (!ambassadorSnap.exists()) {
+      await setDoc(ambassadorRef, {
+        name: user.displayName,
+        email: user.email,
+        status: 'pending',
+        commission_total: 0,
+        created_at: serverTimestamp()
+      });
+    }
+
+    if (authMessage) {
+      authMessage.textContent = `Innlogget som ${user.email}`;
+    }
   } catch (error) {
     console.error('Google-innlogging feilet.', error);
+    if (authMessage) {
+      authMessage.textContent = `Innlogging feilet: ${error.message}`;
+    }
   }
 };
+
+const loginGoogleBtn = document.querySelector('#loginGoogle');
+const registerGoogleBtn = document.querySelector('#registerGoogle');
+
+loginGoogleBtn?.addEventListener('click', window.loginWithGoogle);
+registerGoogleBtn?.addEventListener('click', window.loginWithGoogle);
 
 function initNavbar() {
   const navToggle = document.querySelector('#navToggle');
