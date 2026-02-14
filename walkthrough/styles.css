@@ -146,6 +146,43 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 }
 
 .social-buttons { display: flex; gap: 8px; }
+.social-buttons--stack {
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.social-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  border-color: #d1d5db;
+  font-weight: 600;
+}
+
+.social-auth-btn:hover {
+  background: #f9fafb;
+}
+
+.social-auth-btn__icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.facebook-btn {
+  background: #ffffff;
+}
+
+.is-hidden {
+  display: none;
+}
 
 .badge {
   display: inline-flex;
