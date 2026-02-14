@@ -1,5 +1,6 @@
 import { initAmbassadorCharts } from './charts/index.js';
 import { currency, demoDb } from './data-store.js';
+import { initFirebaseAuth } from './firebase-auth.js';
 
 function initNavbar() {
   const navToggle = document.querySelector('#navToggle');
@@ -257,3 +258,5 @@ function initAdminPage() {
 initNavbar();
 initAmbassadorPage();
 initAdminPage();
+
+initFirebaseAuth();
