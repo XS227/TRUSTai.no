@@ -176,9 +176,14 @@ function trackReferralFromUrl() {
   const target = url.searchParams.get('target') || 'ambassador.html';
   if (!ref) return;
 
+  const existingRef = (localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || '').trim().toUpperCase();
+  const attributedRef = existingRef || ref;
+
   demoDb.referralClicks.push({ ambassadorId: ref, timestamp: new Date().toISOString(), userAgent: navigator.userAgent });
-  localStorage.setItem('ambassadorRef', ref);
-  setCookie(REFERRAL_COOKIE_KEY, ref, 90);
+  if (!existingRef) {
+    localStorage.setItem('ambassadorRef', attributedRef);
+    setCookie(REFERRAL_COOKIE_KEY, attributedRef, 90);
+  }
   window.location.replace(target);
 }
 
@@ -255,7 +260,11 @@ async function createLead({ name, company, email }) {
     commissionRate: lead.commissionRate ?? DEFAULT_COMMISSION_RATE,
     createdAt: new Date().toISOString()
   });
-  demoDb.leads.unshift(localLead);
+
+  if (!lead.duplicate) {
+    demoDb.leads.unshift(localLead);
+  }
+
   return localLead;
 }
 
@@ -275,7 +284,9 @@ function initLandingPage() {
     const formData = new FormData(leadForm);
     try {
       const lead = await createLead({ name: formData.get('name'), company: formData.get('company'), email: formData.get('email') });
-      leadMessage.textContent = `Lead lagret: ${lead.company}`;
+      leadMessage.textContent = lead.duplicate
+        ? `Lead finnes allerede for ${lead.company}. Eksisterende ambassadør er beholdt.`
+        : `Lead lagret: ${lead.company}`;
       leadForm.reset();
     } catch {
       leadMessage.textContent = 'Kunne ikke lagre lead.';
