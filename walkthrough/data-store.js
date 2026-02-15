@@ -1,4 +1,4 @@
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { addDoc, collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 export const LEAD_STATUSES = ['open', 'meeting', 'offer_sent', 'approved', 'won', 'lost'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
@@ -165,9 +165,25 @@ export function captureLeadCommission(lead) {
 
 export async function createLeadInStore(db, { name, company, email }) {
   const ambassadorId = localStorage.getItem('ambassadorRef');
+  const normalizedCompany = String(company || '').trim().toLowerCase();
+
+  if (normalizedCompany) {
+    const duplicateQuery = query(collection(db, 'leads'), where('normalizedCompany', '==', normalizedCompany), limit(1));
+    const duplicateSnapshot = await getDocs(duplicateQuery);
+    if (!duplicateSnapshot.empty) {
+      const existingLead = duplicateSnapshot.docs[0];
+      return {
+        id: existingLead.id,
+        ...existingLead.data(),
+        duplicate: true
+      };
+    }
+  }
+
   const leadPayload = {
     name,
     company,
+    normalizedCompany,
     email,
     ambassadorId: ambassadorId || null,
     status: 'open',
@@ -176,11 +192,12 @@ export async function createLeadInStore(db, { name, company, email }) {
     commissionRate: 0.1,
     commissionAmount: 0,
     commission: 0,
+    // NOTE: Frontend-beregning er kun MVP. Flytt provisjonsberegning/validering til Cloud Function i produksjon.
     createdAt: serverTimestamp()
   };
 
   const leadRef = await addDoc(collection(db, 'leads'), leadPayload);
-  return { id: leadRef.id, ...leadPayload };
+  return { id: leadRef.id, ...leadPayload, duplicate: false };
 }
 
 export async function updateLeadInStore(db, leadId, updates) {
