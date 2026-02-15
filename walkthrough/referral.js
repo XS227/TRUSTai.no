@@ -1,11 +1,23 @@
-export function captureReferral() {
-  const path = window.location.pathname;
+function extractReferralCode(pathname) {
+  const parts = String(pathname || '')
+    .split('/')
+    .filter(Boolean);
 
-  const match = String(path || '').match(/\/a\/([^/?#]+)/i);
-  if (match?.[1]) {
-    const ambassadorId = decodeURIComponent(match[1]).trim().toUpperCase();
-    if (!localStorage.getItem('ambassadorRef')) {
-      localStorage.setItem('ambassadorRef', ambassadorId);
-    }
+  if (!parts.length) return '';
+
+  const aIndex = parts.lastIndexOf('a');
+  if (aIndex >= 0 && parts[aIndex + 1]) {
+    return decodeURIComponent(parts[aIndex + 1]).trim().toUpperCase();
+  }
+
+  return decodeURIComponent(parts[parts.length - 1]).trim().toUpperCase();
+}
+
+export function captureReferral() {
+  const ambassadorId = extractReferralCode(window.location.pathname);
+  if (!ambassadorId) return;
+
+  if (!localStorage.getItem('ambassadorRef')) {
+    localStorage.setItem('ambassadorRef', ambassadorId);
   }
 }
