@@ -37,18 +37,45 @@ const TRANSLATIONS = {
     authIn: 'Logg inn',
     authOut: 'Logg ut',
     google: 'Fortsett med Google',
-    fb: 'Fortsett med Facebook'
+    fb: 'Fortsett med Facebook',
+    navLogin: 'Login / Onboarding',
+    navAmbassador: 'Ambassadørdashboard',
+    navAdmin: 'Admin-panel',
+    navProfile: 'Min profil',
+    navPayout: 'Utbetalinger'
   },
   en: {
     authIn: 'Log in',
     authOut: 'Log out',
     google: 'Continue with Google',
-    fb: 'Continue with Facebook'
+    fb: 'Continue with Facebook',
+    navLogin: 'Login / Onboarding',
+    navAmbassador: 'Ambassador dashboard',
+    navAdmin: 'Admin panel',
+    navProfile: 'My profile',
+    navPayout: 'Payouts'
   }
 };
 
 const adminState = { leadStatusFilter: 'all', ambassadorFilter: 'all', pendingStatusLeadId: null };
 const ambassadorState = { leadFilter: 'all', selectedSharePlatform: null };
+
+
+function getLeadPayoutBucket(lead) {
+  const status = String(lead.status || '').toLowerCase();
+  const payoutStatus = String(lead.payoutStatus || '').toLowerCase();
+  if (status !== 'approved' && status !== 'payout_requested' && status !== 'paid') return 'n/a';
+  if (status === 'paid' || payoutStatus === 'paid' || payoutStatus === 'locked') return 'paid';
+  if (status === 'payout_requested' || payoutStatus === 'payout_requested' || payoutStatus === 'pending') return 'pending';
+  return 'available';
+}
+
+function payoutBadgeLabel(bucket) {
+  if (bucket === 'available') return '<span class="badge ok">Available</span>';
+  if (bucket === 'pending') return '<span class="badge pending">Pending</span>';
+  if (bucket === 'paid') return '<span class="badge info">Paid</span>';
+  return '<span class="badge">—</span>';
+}
 
 function setAuthMessage(message) {
   if (authMessage) authMessage.textContent = message;
@@ -105,6 +132,17 @@ function setLang(lang) {
     authAction.textContent = loggedIn ? t.authOut : t.authIn;
   }
   if (languageToggle) languageToggle.textContent = lang === 'en' ? '🇳🇴' : '🇬🇧';
+
+  document.querySelectorAll('[data-i18n]').forEach((node) => {
+    const key = node.dataset.i18n;
+    const value = TRANSLATIONS[lang][key];
+    if (value) node.textContent = value;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+    const key = node.dataset.i18nPlaceholder;
+    const value = TRANSLATIONS[lang][key];
+    if (value) node.setAttribute('placeholder', value);
+  });
 }
 
 function initLanguageToggle() {
@@ -322,16 +360,20 @@ function renderAdmin() {
   if (!leadBody || !ambassadorBody || !payoutBody) return;
 
   const filteredLeads = getFilteredLeads();
-  leadBody.innerHTML = filteredLeads.map((lead) => `
+  leadBody.innerHTML = filteredLeads.map((lead) => {
+    const payoutBucket = getLeadPayoutBucket(lead);
+    return `
     <tr>
       <td>${lead.company}</td>
       <td>${lead.name}</td>
       <td>${lead.ambassadorId || 'Ingen'}</td>
       <td><span class="badge info">${lead.status}</span></td>
-      <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${['approved', 'won'].includes(String(lead.status || '').toLowerCase()) ? '' : 'disabled'} /></td>
+      <td>${payoutBadgeLabel(payoutBucket)}</td>
+      <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${String(lead.status || '').toLowerCase() === 'approved' ? '' : 'disabled'} /></td>
       <td>${currency(lead.commissionAmount || 0)}</td>
       <td><button class="btn-secondary open-status-modal" data-id="${lead.id}">Endre</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   if (leadEmptyState) leadEmptyState.hidden = filteredLeads.length > 0;
 
@@ -346,6 +388,7 @@ function renderAdmin() {
         <td>${currency(totals.revenue)}</td>
         <td><input class="commission-input" data-id="${ambassador.id}" type="number" min="1" max="100" value="${Math.round(ambassador.commissionRate * 100)}" />%</td>
         <td>${currency(totals.earned)}</td>
+        <td>${currency(totals.unpaid)}</td>
         <td>
           <select class="ambassador-status" data-id="${ambassador.id}">
             ${AMBASSADOR_STATUSES.map((status) => `<option value="${status}" ${status === ambassador.status ? 'selected' : ''}>${status}</option>`).join('')}
@@ -357,7 +400,23 @@ function renderAdmin() {
 
   payoutBody.innerHTML = demoDb.ambassadors.map((ambassador) => {
     const totals = calculateAmbassadorTotals(ambassador.id);
-    return `<tr><td>${ambassador.name}</td><td>${currency(totals.earned)}</td><td>${currency(totals.paidOut)}</td><td>${currency(totals.available)}</td><td><button class="btn-secondary mark-paid" data-id="${ambassador.id}">Marker utbetalt</button></td></tr>`;
+    const nextPayDate = new Date().toISOString().slice(0, 10);
+    const latestPayout = demoDb.payouts
+      .filter((payout) => payout.ambassadorId === ambassador.id)
+      .sort((a, b) => new Date(b.paidAt || 0) - new Date(a.paidAt || 0))[0];
+    return `<tr>
+      <td>${ambassador.name}</td>
+      <td>${currency(totals.earned)}</td>
+      <td>${currency(totals.available)}</td>
+      <td>${currency(totals.pending)}</td>
+      <td>${currency(totals.paid)}</td>
+      <td>${currency(totals.unpaid)}</td>
+      <td>${latestPayout?.paidAt ? formatDate(latestPayout.paidAt) : '—'}</td>
+      <td>
+        <input class="payout-date-input" type="date" data-id="${ambassador.id}" value="${nextPayDate}" />
+        <button class="btn-secondary mark-paid" data-id="${ambassador.id}">Marker paid</button>
+      </td>
+    </tr>`;
   }).join('');
 }
 
@@ -472,10 +531,22 @@ function initAdminPage() {
   payoutBody.addEventListener('click', (event) => {
     const paidButton = event.target.closest('.mark-paid');
     if (!paidButton) return;
-    const totals = calculateAmbassadorTotals(paidButton.dataset.id);
-    if (totals.available <= 0) return;
-    demoDb.payouts.push({ ambassadorId: paidButton.dataset.id, paidOut: totals.available });
+    const ambassadorId = paidButton.dataset.id;
+    const payoutDateInput = payoutBody.querySelector(`.payout-date-input[data-id="${ambassadorId}"]`);
+    const payoutDate = payoutDateInput?.value || new Date().toISOString().slice(0, 10);
+    const payableLeads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassadorId && getLeadPayoutBucket(lead) === 'available');
+    const paidOut = payableLeads.reduce((sum, lead) => sum + Number(lead.commissionAmount || lead.commission || 0), 0);
+    if (paidOut <= 0) return;
+
+    payableLeads.forEach((lead) => {
+      lead.status = 'paid';
+      lead.payoutStatus = 'paid';
+      lead.payoutDate = `${payoutDate}T00:00:00.000Z`;
+    });
+
+    demoDb.payouts.push({ ambassadorId, paidOut, paidAt: `${payoutDate}T00:00:00.000Z` });
     renderAdmin();
+    renderAmbassadorDashboard();
   });
 
   document.querySelector('#closeStatusModal')?.addEventListener('click', closeStatusModal);
