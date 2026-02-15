@@ -1,8 +1,20 @@
-import { AMBASSADOR_STATUSES, LEAD_STATUSES, calculateAmbassadorTotals, currency, demoDb, formatDate } from './data-store.js';
+import {
+  AMBASSADOR_STATUSES,
+  LEAD_STATUSES,
+  calculateAmbassadorTotals,
+  captureLeadCommission,
+  createLeadInStore,
+  currency,
+  demoDb,
+  formatDate,
+  subscribeToLeadsInStore,
+  updateLeadInStore
+} from './data-store.js';
 import { initAmbassadorCharts, refreshAmbassadorCharts } from './charts/index.js';
+import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
-import { getAuth, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
-import { collection, doc, getDoc, getFirestore, onSnapshot, query, serverTimestamp, setDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { getAuth, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBERElRl3D5EHzKme6to5w2nTZFAFb8ySQ',
@@ -17,9 +29,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const authMessage = document.querySelector('#authMessage');
-const REFERRAL_STORAGE_KEY = 'animer_referral';
 const REFERRAL_COOKIE_KEY = 'ref';
-const ATTRIBUTION_WINDOW_DAYS = 90;
 const DEFAULT_COMMISSION_RATE = 0.1;
 
 const TRANSLATIONS = {
@@ -155,46 +165,6 @@ function initNavbar() {
   });
 }
 
-function getReferralData() {
-  try {
-    const raw = localStorage.getItem(REFERRAL_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.ref || !parsed?.capturedAt) return null;
-    return parsed;
-  } catch (error) {
-    return null;
-  }
-}
-
-function isAttributionActive(referralData) {
-  if (!referralData?.capturedAt) return false;
-  const capturedAt = new Date(referralData.capturedAt).getTime();
-  if (!capturedAt) return false;
-  const ageMs = Date.now() - capturedAt;
-  return ageMs <= ATTRIBUTION_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-}
-
-function getAmbassadorReferrer() {
-  const localRef = getReferralData();
-  if (isAttributionActive(localRef)) return localRef.ref;
-  const cookieRef = getCookie(REFERRAL_COOKIE_KEY);
-  return cookieRef || null;
-}
-
-function persistReferral(ref) {
-  const referralData = {
-    ref,
-    capturedAt: new Date().toISOString(),
-    attribution: 'first-click',
-    expiresInDays: ATTRIBUTION_WINDOW_DAYS
-  };
-
-  localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(referralData));
-  localStorage.setItem(REFERRAL_COOKIE_KEY, ref);
-  setCookie(REFERRAL_COOKIE_KEY, ref, ATTRIBUTION_WINDOW_DAYS);
-}
-
 function getReferralFromPath(pathname) {
   const match = String(pathname || '').match(/\/a\/([^/?#]+)/i);
   return match?.[1] ? decodeURIComponent(match[1]).trim().toUpperCase() : null;
@@ -207,7 +177,8 @@ function trackReferralFromUrl() {
   if (!ref) return;
 
   demoDb.referralClicks.push({ ambassadorId: ref, timestamp: new Date().toISOString(), userAgent: navigator.userAgent });
-  setCookie('ref', ref, 90);
+  localStorage.setItem('ambassadorRef', ref);
+  setCookie(REFERRAL_COOKIE_KEY, ref, 90);
   window.location.replace(target);
 }
 
@@ -273,23 +244,19 @@ function loginWithFacebookDemo() {
   setLang(getCurrentLang());
 }
 
-function createLead({ name, company, email }) {
-  const ambassadorId = getCookie('ref') || 'AMB123';
-  const newLead = {
-    id: `lead-${Date.now()}`,
-    name,
-    company,
-    email,
-    ambassadorId,
-    status: 'open',
-    dealValue: 0,
-    commissionAmount: 0,
-    value: 0,
-    commissionRate: DEFAULT_COMMISSION_RATE,
+async function createLead({ name, company, email }) {
+  const ambassadorId = localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || null;
+  if (ambassadorId) localStorage.setItem('ambassadorRef', ambassadorId);
+
+  const lead = await createLeadInStore(db, { name, company, email });
+  const localLead = captureLeadCommission({
+    ...lead,
+    ambassadorId: lead.ambassadorId || ambassadorId,
+    commissionRate: lead.commissionRate ?? DEFAULT_COMMISSION_RATE,
     createdAt: new Date().toISOString()
-  };
-  demoDb.leads.unshift(newLead);
-  return newLead;
+  });
+  demoDb.leads.unshift(localLead);
+  return localLead;
 }
 
 function initLandingPage() {
@@ -303,12 +270,16 @@ function initLandingPage() {
     setAuthMessage('Logg inn for å få tilgang til admin-sider.');
   }
 
-  leadForm.addEventListener('submit', (event) => {
+  leadForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(leadForm);
-    const lead = createLead({ name: formData.get('name'), company: formData.get('company'), email: formData.get('email') });
-    leadMessage.textContent = `Lead lagret: ${lead.company}`;
-    leadForm.reset();
+    try {
+      const lead = await createLead({ name: formData.get('name'), company: formData.get('company'), email: formData.get('email') });
+      leadMessage.textContent = `Lead lagret: ${lead.company}`;
+      leadForm.reset();
+    } catch {
+      leadMessage.textContent = 'Kunne ikke lagre lead.';
+    }
   });
 
   registerForm?.addEventListener('submit', (event) => {
@@ -346,7 +317,7 @@ function renderAdmin() {
       <td>${lead.name}</td>
       <td>${lead.ambassadorId || 'Ingen'}</td>
       <td><span class="badge info">${lead.status}</span></td>
-      <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${lead.status === 'Won' ? '' : 'disabled'} /></td>
+      <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${['approved', 'won'].includes(String(lead.status || '').toLowerCase()) ? '' : 'disabled'} /></td>
       <td>${currency(lead.commissionAmount || 0)}</td>
       <td><button class="btn-secondary open-status-modal" data-id="${lead.id}">Endre</button></td>
     </tr>`).join('');
@@ -380,22 +351,12 @@ function renderAdmin() {
 }
 
 function recalculateLeadCommission(lead) {
-  const normalizedStatus = String(lead.status || '').toLowerCase();
-  const approved = normalizedStatus === 'approved' || normalizedStatus === 'won';
-  const value = Number(lead.dealValue ?? lead.value ?? 0);
-  const commissionRate = Number(lead.commissionRate ?? DEFAULT_COMMISSION_RATE);
+  const recalculated = captureLeadCommission({
+    ...lead,
+    commissionRate: Number(lead.commissionRate ?? DEFAULT_COMMISSION_RATE)
+  });
 
-  if (!approved) {
-    lead.dealValue = 0;
-    lead.value = 0;
-    lead.commissionAmount = 0;
-    return;
-  }
-
-  lead.dealValue = value;
-  lead.value = value;
-  lead.commissionRate = commissionRate;
-  lead.commissionAmount = Math.round(value * commissionRate);
+  Object.assign(lead, recalculated);
 }
 
 function openStatusModal(leadId) {
@@ -456,14 +417,24 @@ function initAdminPage() {
     modalBackdrop.classList.add('open');
   });
 
-  leadBody.addEventListener('change', (event) => {
+  leadBody.addEventListener('change', async (event) => {
     const dealInput = event.target.closest('.deal-input');
     if (!dealInput) return;
     const lead = demoDb.leads.find((item) => item.id === dealInput.dataset.id);
     if (!lead) return;
-    lead.dealValue = Number(dealInput.value || 0);
-    const ambassador = demoDb.ambassadors.find((item) => item.id === lead.ambassadorId);
-    lead.commissionAmount = Math.round(lead.dealValue * Number(ambassador?.commissionRate || 0));
+    lead.value = Number(dealInput.value || 0);
+    lead.dealValue = lead.value;
+    recalculateLeadCommission(lead);
+    try {
+      await updateLeadInStore(db, lead.id, {
+        status: lead.status,
+        value: lead.value,
+        dealValue: lead.dealValue,
+        commissionRate: Number(lead.commissionRate ?? DEFAULT_COMMISSION_RATE)
+      });
+    } catch {
+      // ignore in local preview
+    }
     renderAdmin();
   });
 
@@ -497,12 +468,22 @@ function initAdminPage() {
   });
 
   document.querySelector('#closeStatusModal')?.addEventListener('click', closeStatusModal);
-  document.querySelector('#saveStatusModal')?.addEventListener('click', () => {
+  document.querySelector('#saveStatusModal')?.addEventListener('click', async () => {
     if (!modalSelect || !adminState.pendingStatusLeadId) return;
     const lead = demoDb.leads.find((item) => item.id === adminState.pendingStatusLeadId);
     if (!lead) return;
     lead.status = modalSelect.value;
     recalculateLeadCommission(lead);
+    try {
+      await updateLeadInStore(db, lead.id, {
+        status: lead.status,
+        value: Number(lead.value ?? lead.dealValue ?? 0),
+        dealValue: Number(lead.dealValue ?? lead.value ?? 0),
+        commissionRate: Number(lead.commissionRate ?? DEFAULT_COMMISSION_RATE)
+      });
+    } catch {
+      // ignore in local preview
+    }
     closeStatusModal();
     renderAdmin();
   });
@@ -659,26 +640,15 @@ function initInvoicePage() {
 }
 
 
-function subscribeToAmbassadorLeads() {
-  if (!window.location.pathname.includes('ambassador')) return;
-
-  onAuthStateChanged(auth, (user) => {
-    if (!user) return;
-
-    const leadsQuery = query(collection(db, 'leads'), where('ambassadorId', '==', user.uid));
-    onSnapshot(leadsQuery, (snapshot) => {
-      const firestoreLeads = snapshot.docs.map((docSnapshot) => ({
-        id: docSnapshot.id,
-        ...docSnapshot.data()
-      }));
-
-      if (!firestoreLeads.length) return;
-      demoDb.leads = firestoreLeads;
-      renderAmbassadorDashboard();
-    });
+function subscribeToFirestoreLeads() {
+  subscribeToLeadsInStore(db, (firestoreLeads) => {
+    demoDb.leads = firestoreLeads.map((lead) => captureLeadCommission(lead));
+    renderAdmin();
+    renderAmbassadorDashboard();
   });
 }
 
+captureReferral();
 trackReferralFromUrl();
 handleRedirectLoginResult();
 initTheme();
@@ -694,7 +664,7 @@ initProfilePage();
 initInvoicePage();
 syncProfileUi();
 initAmbassadorCharts();
-subscribeToAmbassadorLeads();
+subscribeToFirestoreLeads();
 
 document.querySelector('#loginGoogle')?.addEventListener('click', window.loginWithGoogle);
 document.querySelector('#loginFacebook')?.addEventListener('click', loginWithFacebookDemo);
