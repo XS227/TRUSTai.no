@@ -13,70 +13,10 @@ export const demoDb = {
     avatarUrl: 'https://i.pravatar.cc/120?img=12',
     company: 'Animer AS'
   },
-  ambassadors: [
-    {
-      id: 'AMB123',
-      name: 'Magnus Q',
-      email: 'm.quaine@gmail.com',
-      status: 'Active',
-      commissionRate: 0.1,
-      createdAt: '2026-01-02T10:00:00.000Z'
-    },
-    {
-      id: 'AMB987',
-      name: 'Sara L',
-      email: 'sara.l@email.no',
-      status: 'Pending',
-      commissionRate: 0.12,
-      createdAt: '2026-01-18T12:00:00.000Z'
-    }
-  ],
+  ambassadors: [],
   referralClicks: [],
-  leads: [
-    {
-      id: 'lead-001',
-      name: 'Eva Hansen',
-      company: 'ABC Solutions',
-      email: 'eva@abc.no',
-      ambassadorId: 'AMB123',
-      status: 'approved',
-      dealValue: 35000,
-      value: 35000,
-      commissionRate: 0.1,
-      commissionAmount: 3500,
-      commission: 3500,
-      payoutStatus: 'paid',
-      payoutDate: '2026-02-15T11:30:00.000Z',
-      createdAt: '2026-02-01T09:00:00.000Z'
-    },
-    {
-      id: 'lead-002',
-      name: 'Ola Pedersen',
-      company: 'TechNordic',
-      email: 'ola@technordic.no',
-      ambassadorId: 'AMB123',
-      status: 'approved',
-      dealValue: 0,
-      value: 0,
-      commissionRate: 0.1,
-      commissionAmount: 0,
-      commission: 0,
-      payoutStatus: 'payout_requested',
-      createdAt: '2026-02-03T09:00:00.000Z'
-    },
-    {
-      id: 'lead-003',
-      name: 'Lars Enger',
-      company: 'WebFlow AS',
-      email: 'lars@webflowas.no',
-      ambassadorId: 'AMB987',
-      status: 'meeting',
-      dealValue: 0,
-      commissionAmount: 0,
-      createdAt: '2026-02-06T09:00:00.000Z'
-    }
-  ],
-  payouts: [{ ambassadorId: 'AMB123', paidOut: 3500, paidAt: '2026-02-15T11:30:00.000Z' }],
+  leads: [],
+  payouts: [],
   invoices: [],
   socialShares: []
 };
@@ -264,5 +204,16 @@ export function subscribeToLeadsInStore(db, callback) {
       ...docSnapshot.data()
     }));
     callback(leads);
+  });
+}
+
+export function subscribeToAmbassadorsInStore(db, callback) {
+  const ambassadorsQuery = query(collection(db, 'ambassadors'), orderBy('createdAt', 'desc'));
+  return onSnapshot(ambassadorsQuery, (snapshot) => {
+    const ambassadors = snapshot.docs.map((docSnapshot) => ({
+      id: docSnapshot.id,
+      ...docSnapshot.data()
+    }));
+    callback(ambassadors);
   });
 }
