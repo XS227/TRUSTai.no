@@ -13,7 +13,7 @@ import {
 import { initAmbassadorCharts, refreshAmbassadorCharts } from './charts/index.js';
 import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
-import { getAuth, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+import { getAuth, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -59,6 +59,7 @@ const TRANSLATIONS = {
 
 const adminState = { leadStatusFilter: 'all', ambassadorFilter: 'all', pendingStatusLeadId: null };
 const ambassadorState = { leadFilter: 'all', selectedSharePlatform: null };
+const PROTECTED_PAGES = ['/ambassador.html', '/admin.html', '/profile.html', '/payout-support.html'];
 
 
 function getLeadPayoutBucket(lead) {
@@ -163,9 +164,58 @@ function hideProtectedNavigation(isLoggedIn) {
 
 function enforcePageAccess(isLoggedIn) {
   const path = window.location.pathname;
-  const isAdminPage = path.includes('/admin.html');
-  if (!isAdminPage || isLoggedIn) return;
+  const isProtectedPage = PROTECTED_PAGES.some((page) => path.endsWith(page));
+  if (!isProtectedPage || isLoggedIn) return;
   window.location.replace('index.html?blocked=admin');
+}
+
+function normalizePath(path) {
+  return String(path || '').replace(/\/+$/, '');
+}
+
+function getBasePath() {
+  const normalizedPath = normalizePath(window.location.pathname);
+  const deploymentPath = normalizedPath.match(/^(.*?\/animer\/\d+)(?:\/|$)/i)?.[1];
+  if (deploymentPath) return deploymentPath;
+  const currentDirectory = normalizedPath.replace(/\/[^/]+$/, '');
+  return currentDirectory || '';
+}
+
+function getAmbassadorReferralLink(ambassadorId = 'AMB123') {
+  const basePath = getBasePath();
+  const safeAmbassadorId = encodeURIComponent(String(ambassadorId || 'AMB123').toUpperCase());
+  return `${window.location.origin}${basePath}/a/${safeAmbassadorId}`;
+}
+
+function getDefaultReferralTarget() {
+  return `${getBasePath()}/ambassador.html`.replace(/\/\//g, '/');
+}
+
+function resolveCurrentAmbassadorId() {
+  return (localStorage.getItem('ambassadorRef') || demoDb.ambassadors[0]?.id || 'AMB123').toUpperCase();
+}
+
+function hydrateUserFromAuth(user) {
+  if (!user) return;
+  demoDb.userProfile.fullName = user.displayName || demoDb.userProfile.fullName;
+  demoDb.userProfile.email = user.email || demoDb.userProfile.email;
+  demoDb.userProfile.avatarUrl = user.photoURL || demoDb.userProfile.avatarUrl;
+  demoDb.userProfile.provider = 'Google';
+}
+
+function initAuthStateSync() {
+  onAuthStateChanged(auth, (user) => {
+    const isLoggedIn = Boolean(user);
+    localStorage.setItem('isLoggedIn', String(isLoggedIn));
+    if (isLoggedIn) hydrateUserFromAuth(user);
+    hideProtectedNavigation(isLoggedIn);
+    enforcePageAccess(isLoggedIn);
+    syncProfileUi();
+    setLang(getCurrentLang());
+    if (user?.email) {
+      setAuthMessage(`Innlogget som ${user.email}.`);
+    }
+  });
 }
 
 function initAuthAction() {
@@ -182,14 +232,18 @@ function initAuthAction() {
 
   authAction?.addEventListener('click', () => {
     const currentlyLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const nextLoggedIn = !currentlyLoggedIn;
-    localStorage.setItem('isLoggedIn', String(nextLoggedIn));
-    authAction.textContent = nextLoggedIn ? t.authOut : t.authIn;
-    hideProtectedNavigation(nextLoggedIn);
-    setAuthMessage(nextLoggedIn ? 'Du er logget inn.' : 'Du er logget ut.');
-    if (!nextLoggedIn && window.location.pathname.includes('/admin.html')) {
-      window.location.replace('index.html');
+    if (currentlyLoggedIn) {
+      signOut(auth).catch(() => {
+        localStorage.setItem('isLoggedIn', 'false');
+      });
+      setAuthMessage('Du er logget ut.');
+      if (PROTECTED_PAGES.some((page) => window.location.pathname.endsWith(page))) {
+        window.location.replace('index.html');
+      }
+      return;
     }
+
+    setAuthMessage('Bruk innloggingsknappene for å logge inn.');
   });
 }
 
@@ -211,7 +265,7 @@ function getReferralFromPath(pathname) {
 function trackReferralFromUrl() {
   const url = new URL(window.location.href);
   const ref = (url.searchParams.get('ref') || getReferralFromPath(url.pathname) || '').trim().toUpperCase();
-  const target = url.searchParams.get('target') || 'ambassador.html';
+  const target = url.searchParams.get('target') || getDefaultReferralTarget();
   if (!ref) return;
 
   const existingRef = (localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || '').trim().toUpperCase();
@@ -582,7 +636,7 @@ function getAmbassadorLeads(ambassadorId) {
 }
 
 function renderAmbassadorDashboard() {
-  const ambassadorId = 'AMB123';
+  const ambassadorId = resolveCurrentAmbassadorId();
   const leads = getAmbassadorLeads(ambassadorId);
   const totals = calculateAmbassadorTotals(ambassadorId);
 
@@ -634,7 +688,7 @@ function initShareFlow() {
     const platform = ambassadorState.selectedSharePlatform;
     if (!platform) return;
     const text = encodeURIComponent(String(textInput?.value || 'Sjekk Animer!'));
-    const target = encodeURIComponent('https://animer.no/a/AMB123');
+    const target = encodeURIComponent(getAmbassadorReferralLink(resolveCurrentAmbassadorId()));
     const map = {
       LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${target}`,
       Facebook: `https://www.facebook.com/sharer/sharer.php?u=${target}`,
@@ -649,7 +703,7 @@ function initShareFlow() {
   });
 
   document.querySelector('#copyLink')?.addEventListener('click', async () => {
-    await navigator.clipboard.writeText('https://animer.no/a/AMB123');
+    await navigator.clipboard.writeText(getAmbassadorReferralLink(resolveCurrentAmbassadorId()));
     if (message) message.textContent = 'Lenke kopiert.';
   });
 }
@@ -733,6 +787,7 @@ function subscribeToFirestoreLeads() {
 captureReferral();
 trackReferralFromUrl();
 handleRedirectLoginResult();
+initAuthStateSync();
 initTheme();
 initAuthAction();
 initLanguageToggle();

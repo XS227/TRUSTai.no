@@ -1,8 +1,9 @@
 export function captureReferral() {
   const path = window.location.pathname;
 
-  if (path.startsWith('/a/')) {
-    const ambassadorId = path.split('/a/')[1];
+  const match = String(path || '').match(/\/a\/([^/?#]+)/i);
+  if (match?.[1]) {
+    const ambassadorId = decodeURIComponent(match[1]).trim().toUpperCase();
     if (!localStorage.getItem('ambassadorRef')) {
       localStorage.setItem('ambassadorRef', ambassadorId);
     }
