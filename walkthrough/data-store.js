@@ -1,6 +1,6 @@
 import { addDoc, collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
-export const LEAD_STATUSES = ['open', 'meeting', 'offer_sent', 'approved', 'won', 'lost'];
+export const LEAD_STATUSES = ['open', 'meeting', 'offer_sent', 'approved', 'payout_requested', 'paid', 'lost'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
 
 export const demoDb = {
@@ -39,9 +39,14 @@ export const demoDb = {
       company: 'ABC Solutions',
       email: 'eva@abc.no',
       ambassadorId: 'AMB123',
-      status: 'Won',
+      status: 'approved',
       dealValue: 35000,
+      value: 35000,
+      commissionRate: 0.1,
       commissionAmount: 3500,
+      commission: 3500,
+      payoutStatus: 'paid',
+      payoutDate: '2026-02-15T11:30:00.000Z',
       createdAt: '2026-02-01T09:00:00.000Z'
     },
     {
@@ -50,11 +55,13 @@ export const demoDb = {
       company: 'TechNordic',
       email: 'ola@technordic.no',
       ambassadorId: 'AMB123',
-      status: 'Offer Sent',
+      status: 'approved',
       dealValue: 0,
       value: 0,
       commissionRate: 0.1,
       commissionAmount: 0,
+      commission: 0,
+      payoutStatus: 'payout_requested',
       createdAt: '2026-02-03T09:00:00.000Z'
     },
     {
@@ -63,13 +70,13 @@ export const demoDb = {
       company: 'WebFlow AS',
       email: 'lars@webflowas.no',
       ambassadorId: 'AMB987',
-      status: 'Meeting',
+      status: 'meeting',
       dealValue: 0,
       commissionAmount: 0,
       createdAt: '2026-02-06T09:00:00.000Z'
     }
   ],
-  payouts: [{ ambassadorId: 'AMB123', paidOut: 5000 }],
+  payouts: [{ ambassadorId: 'AMB123', paidOut: 3500, paidAt: '2026-02-15T11:30:00.000Z' }],
   invoices: [],
   socialShares: []
 };
@@ -89,6 +96,23 @@ export const revenueByChannel = [
   { label: 'X/Twitter', value: 25 }
 ];
 
+
+export const payoutTrendSeries = [
+  { month: 'Nov', available: 4200, paid: 1800 },
+  { month: 'Des', available: 5100, paid: 2600 },
+  { month: 'Jan', available: 6100, paid: 3500 },
+  { month: 'Feb', available: 7300, paid: 4200 },
+  { month: 'Mar', available: 6800, paid: 5100 },
+  { month: 'Apr', available: 8200, paid: 6400 }
+];
+
+export const leadStageDistribution = [
+  { label: 'Open', value: 12 },
+  { label: 'Meeting', value: 7 },
+  { label: 'Offer sent', value: 5 },
+  { label: 'Approved', value: 4 }
+];
+
 export function currency(value) {
   return new Intl.NumberFormat('nb-NO', {
     style: 'currency',
@@ -104,22 +128,34 @@ export function formatDate(value) {
 export function calculateAmbassadorTotals(ambassadorId) {
   const ambassador = demoDb.ambassadors.find((item) => item.id === ambassadorId);
   const ambassadorLeads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassadorId);
-  const wonLeads = ambassadorLeads.filter((lead) => String(lead.status || '').toLowerCase() === 'won');
-  const approvedLeads = ambassadorLeads.filter((lead) => {
-    const status = String(lead.status || '').toLowerCase();
-    return status === 'approved' || status === 'won';
-  });
+  const approvedLeads = ambassadorLeads.filter((lead) => ['approved', 'payout_requested', 'paid'].includes(String(lead.status || '').toLowerCase()));
   const pipelineLeads = ambassadorLeads.filter((lead) => {
     const status = String(lead.status || '').toLowerCase();
-    return status !== 'approved' && status !== 'won' && status !== 'lost';
+    return !['approved', 'payout_requested', 'paid', 'lost'].includes(status);
   });
-  const revenue = wonLeads.reduce((sum, lead) => sum + Number(lead.dealValue || 0), 0);
+  const revenue = approvedLeads.reduce((sum, lead) => sum + Number(lead.dealValue || 0), 0);
   const rate = Number(ambassador?.commissionRate || 0);
-  const earned = wonLeads.reduce((sum, lead) => sum + Math.round(Number(lead.dealValue || 0) * rate), 0);
+  const earned = approvedLeads.reduce((sum, lead) => sum + Math.round(Number(lead.dealValue || 0) * rate), 0);
 
-  wonLeads.forEach((lead) => {
+  approvedLeads.forEach((lead) => {
     lead.commissionAmount = Math.round(Number(lead.dealValue || 0) * rate);
   });
+
+  const payoutBuckets = approvedLeads.reduce(
+    (totals, lead) => {
+      const commission = Number(lead.commissionAmount ?? lead.commission ?? 0);
+      const payoutStatus = String(lead.payoutStatus || 'available').toLowerCase();
+      if (payoutStatus === 'paid' || payoutStatus === 'locked') {
+        totals.paid += commission;
+      } else if (payoutStatus === 'payout_requested' || payoutStatus === 'pending') {
+        totals.pending += commission;
+      } else {
+        totals.available += commission;
+      }
+      return totals;
+    },
+    { available: 0, pending: 0, paid: 0 }
+  );
 
   const paidOut = demoDb.payouts
     .filter((payout) => payout.ambassadorId === ambassadorId)
@@ -132,13 +168,16 @@ export function calculateAmbassadorTotals(ambassadorId) {
     revenue,
     earned,
     paidOut,
-    available: earned - paidOut
+    available: payoutBuckets.available,
+    pending: payoutBuckets.pending,
+    paid: payoutBuckets.paid,
+    unpaid: payoutBuckets.available + payoutBuckets.pending
   };
 }
 
 export function captureLeadCommission(lead) {
   const status = String(lead.status || '').toLowerCase();
-  const isApproved = status === 'approved' || status === 'won';
+  const isApproved = ['approved', 'payout_requested', 'paid'].includes(status);
   const value = Number(lead.value ?? lead.dealValue ?? 0);
   const commissionRate = Number(lead.commissionRate ?? 0.1);
 
@@ -148,18 +187,29 @@ export function captureLeadCommission(lead) {
       value: 0,
       dealValue: 0,
       commissionAmount: 0,
-      commission: 0
+      commission: 0,
+      payoutStatus: null,
+      payoutDate: null
     };
   }
 
   const commission = Math.round(value * commissionRate);
+  const payoutStatusMap = {
+    approved: 'available',
+    payout_requested: 'pending',
+    paid: 'locked'
+  };
+  const leadPayoutStatus = String(lead.payoutStatus || '').toLowerCase();
+  const payoutStatus = payoutStatusMap[leadPayoutStatus] || payoutStatusMap[status] || leadPayoutStatus || 'available';
+
   return {
     ...lead,
     value,
     dealValue: value,
     commissionRate,
     commission,
-    commissionAmount: commission
+    commissionAmount: commission,
+    payoutStatus
   };
 }
 

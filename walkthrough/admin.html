@@ -12,11 +12,11 @@
       <aside class="sidebar">
         <div class="brand">Animer</div>
         <nav class="main-nav">
-          <a href="index.html">Login / Onboarding</a>
-          <a href="ambassador.html">Ambassadørdashboard</a>
-          <a href="admin.html" class="active auth-only">Admin-panel</a>
-          <a href="profile.html">Min profil</a>
-          <a href="payout-support.html">Utbetalinger</a>
+          <a href="index.html" data-i18n="navLogin">Login / Onboarding</a>
+          <a href="ambassador.html" data-i18n="navAmbassador">Ambassadørdashboard</a>
+          <a href="admin.html" class="active auth-only" data-i18n="navAdmin">Admin-panel</a>
+          <a href="profile.html" data-i18n="navProfile">Min profil</a>
+          <a href="payout-support.html" data-i18n="navPayout">Utbetalinger</a>
         </nav>
       </aside>
       <div class="content">
@@ -45,7 +45,7 @@
             <div id="leadEmptyState" class="empty-state" hidden>Ingen leads matcher filter.</div>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Firma</th><th>Kontakt</th><th>Ambassadør</th><th>Status</th><th>Verdi</th><th>Provisjon</th><th>Handling</th></tr></thead>
+                <thead><tr><th>Firma</th><th>Kontakt</th><th>Ambassadør</th><th>Lead status</th><th>Payout status</th><th>Verdi</th><th>Provisjon</th><th>Handling</th></tr></thead>
                 <tbody id="adminLeadBody"></tbody>
               </table>
             </div>
@@ -55,7 +55,7 @@
             <h2>Ambassadører + provisjon</h2>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Navn</th><th>Status</th><th>Leads</th><th>Omsetning</th><th>Sats</th><th>Provisjon</th><th>Handling</th></tr></thead>
+                <thead><tr><th>Navn</th><th>Status</th><th>Leads</th><th>Omsetning</th><th>Sats</th><th>Opptjent</th><th>Unpaid commission</th><th>Handling</th></tr></thead>
                 <tbody id="adminAmbassadorBody"></tbody>
               </table>
             </div>
@@ -65,7 +65,7 @@
             <h2>Utbetalinger</h2>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Ambassadør</th><th>Opptjent</th><th>Utbetalt</th><th>Tilgjengelig</th><th>Handling</th></tr></thead>
+                <thead><tr><th>Ambassadør</th><th>Earned</th><th>Available for payout</th><th>Pending</th><th>Paid</th><th>Unpaid commission</th><th>Sist utbetalt</th><th>Operasjon</th></tr></thead>
                 <tbody id="adminPayoutBody"></tbody>
               </table>
             </div>
