@@ -71,6 +71,39 @@ console.log('firebaseAuthDomain', 'animer-ambassador-mvp.firebaseapp.com');
 
 Hvis `origin` ikke matcher et domene som er autorisert i Firebase, vil login-flyten feile i handler-steget.
 
+
+## Feilsøking: admin-side viser ikke data / `isAdmin()` er `false`
+
+Admin-siden sjekker nå Firebase custom claims (`admin` eller `isAdmin`). Hvis claim mangler, blir brukeren sendt tilbake til `index.html?blocked=admin-role`.
+
+### Sett admin-claim med Firebase CLI (Auth import)
+
+1. Eksporter bruker (eller lag users-fil) med `customClaims`:
+
+```json
+{
+  "users": [
+    {
+      "localId": "UID_TIL_ADMIN",
+      "email": "admin@dittdomene.no",
+      "emailVerified": true,
+      "customClaims": "{\"admin\":true,\"isAdmin\":true}"
+    }
+  ]
+}
+```
+
+2. Importer brukeren/claim:
+
+```bash
+firebase auth:import users.json --hash-algo=HMAC_SHA256 --rounds=8 --mem-cost=14
+```
+
+> Hvis du ikke importerer passord-hash nå, kan du bruke samme kommando-oppsett som i ditt eksisterende auth-export/import script. Poenget er at `customClaims` blir satt.
+
+3. Be admin-brukeren logge ut/inn igjen for å hente nytt ID-token med claims.
+
+
 ## Mål med løsningen
 
 Løsningen støtter to hovedroller:

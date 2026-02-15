@@ -7,14 +7,15 @@ import {
   currency,
   demoDb,
   formatDate,
+  subscribeToAmbassadorsInStore,
   subscribeToLeadsInStore,
   updateLeadInStore
 } from './data-store.js';
 import { initAmbassadorCharts, refreshAmbassadorCharts } from './charts/index.js';
 import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
-import { getAuth, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
-import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+import { doc, getDoc, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBERElRl3D5EHzKme6to5w2nTZFAFb8ySQ',
@@ -60,6 +61,12 @@ const TRANSLATIONS = {
 const adminState = { leadStatusFilter: 'all', ambassadorFilter: 'all', pendingStatusLeadId: null };
 const ambassadorState = { leadFilter: 'all', selectedSharePlatform: null };
 const PROTECTED_PAGES = ['/ambassador.html', '/admin.html', '/profile.html', '/payout-support.html'];
+const ADMIN_PAGE = '/admin.html';
+
+const authState = {
+  user: null,
+  isAdmin: false
+};
 
 
 function getLeadPayoutBucket(lead) {
@@ -156,17 +163,30 @@ function initLanguageToggle() {
   });
 }
 
-function hideProtectedNavigation(isLoggedIn) {
+function hideProtectedNavigation(isLoggedIn, isAdminUser = false) {
   document.querySelectorAll('.auth-only').forEach((element) => {
     element.hidden = !isLoggedIn;
   });
+  document.querySelectorAll('[data-i18n="navAdmin"]').forEach((element) => {
+    if (element.tagName === 'A') {
+      element.hidden = !isLoggedIn || !isAdminUser;
+    }
+  });
 }
 
-function enforcePageAccess(isLoggedIn) {
+function enforcePageAccess(isLoggedIn, isAdminUser = false) {
   const path = window.location.pathname;
   const isProtectedPage = PROTECTED_PAGES.some((page) => path.endsWith(page));
-  if (!isProtectedPage || isLoggedIn) return;
-  window.location.replace('index.html?blocked=admin');
+  if (!isProtectedPage) return;
+  if (!isLoggedIn) {
+    window.location.replace('index.html?blocked=admin');
+    return;
+  }
+
+  const isAdminPage = path.endsWith(ADMIN_PAGE);
+  if (isAdminPage && !isAdminUser) {
+    window.location.replace('index.html?blocked=admin-role');
+  }
 }
 
 function normalizePath(path) {
@@ -192,7 +212,15 @@ function getDefaultReferralTarget() {
 }
 
 function resolveCurrentAmbassadorId() {
-  return (localStorage.getItem('ambassadorRef') || demoDb.ambassadors[0]?.id || 'AMB123').toUpperCase();
+  if (authState.user?.uid) return authState.user.uid;
+  return (localStorage.getItem('ambassadorRef') || demoDb.ambassadors[0]?.id || '').toUpperCase();
+}
+
+async function isAdmin(user) {
+  if (!user) return false;
+  const token = await getIdTokenResult(user);
+  const roles = Array.isArray(token.claims.roles) ? token.claims.roles : [];
+  return Boolean(token.claims.admin || token.claims.isAdmin || roles.includes('admin'));
 }
 
 function hydrateUserFromAuth(user) {
@@ -204,12 +232,16 @@ function hydrateUserFromAuth(user) {
 }
 
 function initAuthStateSync() {
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     const isLoggedIn = Boolean(user);
+    const isAdminUser = isLoggedIn ? await isAdmin(user) : false;
+    authState.user = user;
+    authState.isAdmin = isAdminUser;
     localStorage.setItem('isLoggedIn', String(isLoggedIn));
+    localStorage.setItem('isAdmin', String(isAdminUser));
     if (isLoggedIn) hydrateUserFromAuth(user);
-    hideProtectedNavigation(isLoggedIn);
-    enforcePageAccess(isLoggedIn);
+    hideProtectedNavigation(isLoggedIn, isAdminUser);
+    enforcePageAccess(isLoggedIn, isAdminUser);
     syncProfileUi();
     setLang(getCurrentLang());
     if (user?.email) {
@@ -222,13 +254,14 @@ function initAuthAction() {
   const authAction = document.querySelector('#authAction');
   const avatar = document.querySelector('#topbarAvatar');
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const isAdminUser = localStorage.getItem('isAdmin') === 'true';
   const lang = getCurrentLang();
   const t = TRANSLATIONS[lang];
 
   if (avatar) avatar.src = demoDb.userProfile.avatarUrl;
   if (authAction) authAction.textContent = isLoggedIn ? t.authOut : t.authIn;
-  hideProtectedNavigation(isLoggedIn);
-  enforcePageAccess(isLoggedIn);
+  hideProtectedNavigation(isLoggedIn, isAdminUser);
+  enforcePageAccess(isLoggedIn, isAdminUser);
 
   authAction?.addEventListener('click', () => {
     const currentlyLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -236,6 +269,7 @@ function initAuthAction() {
       signOut(auth).catch(() => {
         localStorage.setItem('isLoggedIn', 'false');
       });
+      localStorage.setItem('isAdmin', 'false');
       setAuthMessage('Du er logget ut.');
       if (PROTECTED_PAGES.some((page) => window.location.pathname.endsWith(page))) {
         window.location.replace('index.html');
@@ -369,6 +403,8 @@ function initLandingPage() {
 
   if (new URLSearchParams(window.location.search).get('blocked') === 'admin') {
     setAuthMessage('Logg inn for å få tilgang til admin-sider.');
+  } else if (new URLSearchParams(window.location.search).get('blocked') === 'admin-role') {
+    setAuthMessage('Kontoen din mangler admin-claim. Sett custom claim (f.eks. isAdmin/admin) og logg inn på nytt.');
   }
 
   leadForm.addEventListener('submit', async (event) => {
@@ -562,7 +598,7 @@ function initAdminPage() {
     renderAdmin();
   });
 
-  ambassadorBody.addEventListener('change', (event) => {
+  ambassadorBody.addEventListener('change', async (event) => {
     const statusSelect = event.target.closest('.ambassador-status');
     const commissionInput = event.target.closest('.commission-input');
 
@@ -570,6 +606,11 @@ function initAdminPage() {
       const ambassador = demoDb.ambassadors.find((item) => item.id === statusSelect.dataset.id);
       if (!ambassador) return;
       ambassador.status = statusSelect.value;
+      try {
+        await updateDoc(doc(db, 'ambassadors', ambassador.id), { status: ambassador.status });
+      } catch {
+        // ignore in local preview
+      }
       renderAdmin();
       return;
     }
@@ -578,6 +619,11 @@ function initAdminPage() {
       const ambassador = demoDb.ambassadors.find((item) => item.id === commissionInput.dataset.id);
       if (!ambassador) return;
       ambassador.commissionRate = Math.max(0.01, Math.min(1, Number(commissionInput.value || 10) / 100));
+      try {
+        await updateDoc(doc(db, 'ambassadors', ambassador.id), { commissionRate: ambassador.commissionRate });
+      } catch {
+        // ignore in local preview
+      }
       renderAdmin();
     }
   });
@@ -784,6 +830,28 @@ function subscribeToFirestoreLeads() {
   });
 }
 
+function normalizeAmbassadorStatus(status) {
+  const lower = String(status || '').toLowerCase();
+  if (lower === 'approved' || lower === 'active') return 'Active';
+  if (lower === 'paused') return 'Paused';
+  return 'Pending';
+}
+
+function subscribeToFirestoreAmbassadors() {
+  subscribeToAmbassadorsInStore(db, (ambassadors) => {
+    demoDb.ambassadors = ambassadors.map((ambassador) => ({
+      id: ambassador.id,
+      name: ambassador.name || ambassador.email || ambassador.id,
+      email: ambassador.email || '',
+      commissionRate: Number(ambassador.commissionRate ?? DEFAULT_COMMISSION_RATE),
+      status: normalizeAmbassadorStatus(ambassador.status),
+      createdAt: ambassador.createdAt || null
+    }));
+    renderAdmin();
+    renderAmbassadorDashboard();
+  });
+}
+
 captureReferral();
 trackReferralFromUrl();
 handleRedirectLoginResult();
@@ -802,6 +870,7 @@ initInvoicePage();
 syncProfileUi();
 initAmbassadorCharts();
 subscribeToFirestoreLeads();
+subscribeToFirestoreAmbassadors();
 
 document.querySelector('#loginGoogle')?.addEventListener('click', window.loginWithGoogle);
 document.querySelector('#loginFacebook')?.addEventListener('click', loginWithFacebookDemo);
