@@ -1,3 +1,5 @@
+import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+
 export const LEAD_STATUSES = ['open', 'meeting', 'offer_sent', 'approved', 'won', 'lost'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
 
@@ -132,4 +134,68 @@ export function calculateAmbassadorTotals(ambassadorId) {
     paidOut,
     available: earned - paidOut
   };
+}
+
+export function captureLeadCommission(lead) {
+  const status = String(lead.status || '').toLowerCase();
+  const isApproved = status === 'approved' || status === 'won';
+  const value = Number(lead.value ?? lead.dealValue ?? 0);
+  const commissionRate = Number(lead.commissionRate ?? 0.1);
+
+  if (!isApproved) {
+    return {
+      ...lead,
+      value: 0,
+      dealValue: 0,
+      commissionAmount: 0,
+      commission: 0
+    };
+  }
+
+  const commission = Math.round(value * commissionRate);
+  return {
+    ...lead,
+    value,
+    dealValue: value,
+    commissionRate,
+    commission,
+    commissionAmount: commission
+  };
+}
+
+export async function createLeadInStore(db, { name, company, email }) {
+  const ambassadorId = localStorage.getItem('ambassadorRef');
+  const leadPayload = {
+    name,
+    company,
+    email,
+    ambassadorId: ambassadorId || null,
+    status: 'open',
+    value: 0,
+    dealValue: 0,
+    commissionRate: 0.1,
+    commissionAmount: 0,
+    commission: 0,
+    createdAt: serverTimestamp()
+  };
+
+  const leadRef = await addDoc(collection(db, 'leads'), leadPayload);
+  return { id: leadRef.id, ...leadPayload };
+}
+
+export async function updateLeadInStore(db, leadId, updates) {
+  const computedLead = captureLeadCommission(updates);
+  await updateDoc(doc(db, 'leads', leadId), computedLead);
+  return computedLead;
+}
+
+export function subscribeToLeadsInStore(db, callback) {
+  const leadsQuery = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
+  return onSnapshot(leadsQuery, (snapshot) => {
+    const leads = snapshot.docs.map((docSnapshot) => ({
+      id: docSnapshot.id,
+      ...docSnapshot.data()
+    }));
+    callback(leads);
+  });
 }
