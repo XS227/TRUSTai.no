@@ -63,13 +63,13 @@
           </section>
 
 
-          <section class="panel">
+          <section class="panel premium-card">
             <h2>Lead capture</h2>
             <p class="muted">Registrer nye leads direkte fra ambassadørsiden.</p>
-            <form id="leadForm" class="form-grid">
-              <label>Navn<input name="name" required /></label>
-              <label>Firma<input name="company" required /></label>
-              <label>E-post<input name="email" type="email" required /></label>
+            <form id="leadForm" class="form-grid premium-form">
+              <label>Navn<input name="name" placeholder="Kontaktperson" required /></label>
+              <label>Firma<input name="company" placeholder="Firma AS" required /></label>
+              <label>E-post<input name="email" type="email" placeholder="kontakt@firma.no" required /></label>
               <button class="btn-primary" type="submit">Lagre lead</button>
               <p id="leadMessage" class="muted" aria-live="polite"></p>
             </form>
