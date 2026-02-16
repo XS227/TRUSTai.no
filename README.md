@@ -2,6 +2,12 @@
 
 Digital plattform for ambassadørdrevet lead-generering, salgspipeline og provisjonshåndtering for Animer.no.
 
+## Systemflyt (MVP)
+
+For en samlet beskrivelse av dataflyten (auth, ambassador, referral, leads, provisjon og payout), se `docs/system-dataflow.md`.
+
+I UI-en finner du også en egen flow-navigasjon under `walkthrough/flow-system.html` med lag-sider for hvert steg.
+
 ## Feilsøking: `Firebase: Error (auth/unauthorized-domain)`
 
 Denne feilen betyr at domenet brukeren logger inn fra ikke er whitelistet i Firebase Authentication.
