@@ -1,14 +1,10 @@
 {
   "hosting": {
-    "public": "walkthrough",
+    "public": "public",
     "rewrites": [
       {
-        "source": "/a/**",
-        "destination": "/referral.html"
-      },
-      {
         "source": "/animer/12/a/**",
-        "destination": "/referral.html"
+        "destination": "/animer/12/walkthrough/referral.html"
       }
     ]
   }
