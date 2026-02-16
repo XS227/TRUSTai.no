@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "walkthrough",
+    "public": "public",
     "rewrites": [
       {
         "source": "/animer/12/amb**",
@@ -8,7 +8,7 @@
       },
       {
         "source": "/animer/12/a/**",
-        "destination": "/referral.html"
+        "destination": "/animer/12/walkthrough/referral.html"
       }
     ]
   }
