@@ -34,6 +34,38 @@ const authMessage = document.querySelector('#authMessage');
 const REFERRAL_COOKIE_KEY = 'ref';
 const DEFAULT_COMMISSION_RATE = 0.1;
 
+const DEMO_ADMIN_USERNAME = 'SuperAdmin';
+const DEMO_ADMIN_PASSWORD = 'Animer';
+const DEMO_ADMIN_SESSION_KEY = 'isDemoAdmin';
+
+const DEMO_ADMIN_PROFILE = {
+  id: 'demo-superadmin',
+  fullName: 'SuperAdmin',
+  email: 'superadmin@demo.animer',
+  phone: '+47 99 99 99 99',
+  provider: 'Demo credentials',
+  avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=SuperAdmin',
+  company: 'Animer Demo'
+};
+
+const DEMO_ADMIN_AMBASSADORS = [
+  { id: 'amb-nora', name: 'Nora Hansen', email: 'nora@animer.no', commissionRate: 0.12, referralCode: 'ambnora', status: 'Active', createdAt: '2026-01-04T08:20:00.000Z' },
+  { id: 'amb-jonas', name: 'Jonas Berg', email: 'jonas@animer.no', commissionRate: 0.1, referralCode: 'ambjonas', status: 'Active', createdAt: '2026-01-03T10:05:00.000Z' },
+  { id: 'amb-sara', name: 'Sara Eide', email: 'sara@animer.no', commissionRate: 0.08, referralCode: 'ambsara', status: 'Pending', createdAt: '2026-01-02T07:30:00.000Z' }
+];
+
+const DEMO_ADMIN_LEADS = [
+  { id: 'lead-2001', company: 'Nordic Dental', name: 'Mina Solberg', email: 'mina@nordicdental.no', ambassadorId: 'amb-nora', status: 'approved', value: 160000, dealValue: 160000, commissionRate: 0.12, payoutStatus: 'available', createdAt: '2026-01-12T09:00:00.000Z' },
+  { id: 'lead-2002', company: 'Aurora Clinic', name: 'Lasse Vik', email: 'lasse@aurora.no', ambassadorId: 'amb-jonas', status: 'payout_requested', value: 110000, dealValue: 110000, commissionRate: 0.1, payoutStatus: 'pending', createdAt: '2026-01-13T12:45:00.000Z' },
+  { id: 'lead-2003', company: 'Smile Lab', name: 'Ingrid N.', email: 'ingrid@smilelab.no', ambassadorId: 'amb-nora', status: 'paid', value: 98000, dealValue: 98000, commissionRate: 0.12, payoutStatus: 'paid', createdAt: '2026-01-05T11:15:00.000Z', payoutDate: '2026-01-25T00:00:00.000Z' },
+  { id: 'lead-2004', company: 'City Physio', name: 'Adrian T.', email: 'adrian@cityphysio.no', ambassadorId: 'amb-sara', status: 'contacted', value: 0, dealValue: 0, commissionRate: 0.08, payoutStatus: null, createdAt: '2026-01-14T14:10:00.000Z' },
+  { id: 'lead-2005', company: 'Opti Vision', name: 'Oda M.', email: 'oda@optivision.no', ambassadorId: 'amb-jonas', status: 'new', value: 0, dealValue: 0, commissionRate: 0.1, payoutStatus: null, createdAt: '2026-01-15T08:55:00.000Z' }
+];
+
+const DEMO_ADMIN_PAYOUTS = [
+  { ambassadorId: 'amb-nora', paidOut: 11760, paidAt: '2026-01-25T00:00:00.000Z' }
+];
+
 const TRANSLATIONS = {
   nb: {
     authIn: 'Logg inn',
@@ -70,6 +102,42 @@ const authState = {
   user: null,
   isAdmin: false
 };
+
+
+function isDemoAdminSession() {
+  return localStorage.getItem(DEMO_ADMIN_SESSION_KEY) === 'true';
+}
+
+function seedDemoAdminContent() {
+  demoDb.userProfile = { ...DEMO_ADMIN_PROFILE };
+  demoDb.ambassadors = DEMO_ADMIN_AMBASSADORS.map((item) => ({ ...item }));
+  demoDb.leads = DEMO_ADMIN_LEADS.map((lead) => captureLeadCommission({ ...lead }));
+  demoDb.payouts = DEMO_ADMIN_PAYOUTS.map((item) => ({ ...item }));
+}
+
+function activateDemoAdminSession() {
+  localStorage.setItem(DEMO_ADMIN_SESSION_KEY, 'true');
+  localStorage.setItem('isLoggedIn', 'true');
+  localStorage.setItem('isAdmin', 'true');
+  seedDemoAdminContent();
+  localStorage.setItem('ambassadorRef', demoDb.ambassadors[0]?.id || '');
+  authState.user = {
+    uid: DEMO_ADMIN_PROFILE.id,
+    email: DEMO_ADMIN_PROFILE.email,
+    displayName: DEMO_ADMIN_PROFILE.fullName
+  };
+  authState.isAdmin = true;
+  hideProtectedNavigation(true, true);
+  syncProfileUi();
+  setLang(getCurrentLang());
+  renderAdmin();
+  renderAmbassadorDashboard();
+  renderFlowPage();
+}
+
+function clearDemoAdminSession() {
+  localStorage.removeItem(DEMO_ADMIN_SESSION_KEY);
+}
 
 
 function getLeadPayoutBucket(lead) {
@@ -256,6 +324,14 @@ function hydrateUserFromAuth(user) {
 
 function initAuthStateSync() {
   onAuthStateChanged(auth, async (user) => {
+    if (isDemoAdminSession() && !user) {
+      activateDemoAdminSession();
+      setAuthMessage('Innlogget som demo SuperAdmin.');
+      return;
+    }
+
+    if (user) clearDemoAdminSession();
+
     const isLoggedIn = Boolean(user);
     const isAdminUser = isLoggedIn ? await isAdmin(user) : false;
     authState.user = user;
@@ -288,6 +364,17 @@ function initAuthAction() {
 
   authAction?.addEventListener('click', () => {
     const currentlyLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (currentlyLoggedIn && isDemoAdminSession()) {
+      clearDemoAdminSession();
+      localStorage.setItem('isLoggedIn', 'false');
+      localStorage.setItem('isAdmin', 'false');
+      authState.user = null;
+      authState.isAdmin = false;
+      setAuthMessage('Demo SuperAdmin er logget ut.');
+      window.location.replace('index.html');
+      return;
+    }
+
     if (currentlyLoggedIn) {
       signOut(auth).catch(() => {
         localStorage.setItem('isLoggedIn', 'false');
@@ -400,6 +487,25 @@ function loginWithFacebookDemo() {
 
 async function createLead({ name, company, email }) {
   const ambassadorId = localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || null;
+
+  if (isDemoAdminSession()) {
+    const localLead = captureLeadCommission({
+      id: `lead-demo-${Date.now()}`,
+      name,
+      company,
+      email,
+      ambassadorId: ambassadorId || demoDb.ambassadors[0]?.id || null,
+      status: 'new',
+      value: 0,
+      dealValue: 0,
+      commissionRate: DEFAULT_COMMISSION_RATE,
+      createdAt: new Date().toISOString()
+    });
+    demoDb.leads.unshift(localLead);
+    renderAdmin();
+    renderAmbassadorDashboard();
+    return localLead;
+  }
   if (ambassadorId) localStorage.setItem('ambassadorRef', ambassadorId);
 
   const lead = await createLeadInStore(db, { name, company, email });
@@ -422,6 +528,8 @@ function initLandingPage() {
   const leadMessage = document.querySelector('#leadMessage');
   const registerForm = document.querySelector('#registerForm');
   const registerMessage = document.querySelector('#registerMessage');
+  const demoAdminForm = document.querySelector('#demoAdminLoginForm');
+  const demoAdminMessage = document.querySelector('#demoAdminMessage');
   if (!leadForm) return;
 
   if (new URLSearchParams(window.location.search).get('blocked') === 'admin') {
@@ -442,6 +550,23 @@ function initLandingPage() {
     } catch {
       leadMessage.textContent = 'Kunne ikke lagre lead.';
     }
+  });
+
+
+  demoAdminForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(demoAdminForm);
+    const username = String(formData.get('username') || '').trim();
+    const password = String(formData.get('password') || '').trim();
+
+    if (username !== DEMO_ADMIN_USERNAME || password !== DEMO_ADMIN_PASSWORD) {
+      if (demoAdminMessage) demoAdminMessage.textContent = 'Feil brukernavn eller passord.';
+      return;
+    }
+
+    activateDemoAdminSession();
+    if (demoAdminMessage) demoAdminMessage.textContent = 'Demo SuperAdmin er aktivert. Sender deg til admin-panelet...';
+    window.location.assign('admin.html');
   });
 
   registerForm?.addEventListener('submit', (event) => {
@@ -997,6 +1122,7 @@ initTheme();
 initAuthAction();
 initLanguageToggle();
 initNavbar();
+if (isDemoAdminSession()) activateDemoAdminSession();
 initLandingPage();
 initAdminPage();
 initAmbassadorTabs();
@@ -1008,8 +1134,10 @@ syncProfileUi();
 renderFlowPage();
 setAmbassadorChartData(buildChartData(demoDb.leads));
 initAmbassadorCharts();
-subscribeToFirestoreLeads();
-subscribeToFirestoreAmbassadors();
+if (!isDemoAdminSession()) {
+  subscribeToFirestoreLeads();
+  subscribeToFirestoreAmbassadors();
+}
 
 document.querySelector('#loginGoogle')?.addEventListener('click', window.loginWithGoogle);
 document.querySelector('#loginFacebook')?.addEventListener('click', loginWithFacebookDemo);
