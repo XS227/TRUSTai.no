@@ -19,9 +19,8 @@ function extractReferralCode(pathname) {
   return '';
 }
 
-function setReferralCookie(value, days = 90) {
-  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-  document.cookie = `ambassadorRef=${value}; expires=${expires}; path=/; SameSite=Lax`;
+function setReferralCookie(value) {
+  document.cookie = 'ambassadorRef=' + value + '; path=/';
 }
 
 export function captureReferral() {
