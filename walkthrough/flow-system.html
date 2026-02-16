@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="nb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Systemflyt</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="brand">Animer</div>
+        <nav class="main-nav">
+          <a href="index.html" data-i18n="navLogin">Login / Onboarding</a>
+          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
+          <a href="admin.html" class="auth-only" data-i18n="navAdmin">Admin-panel</a>
+          <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
+          <a href="payout-support.html" class="auth-only" data-i18n="navPayout">Utbetalinger</a>
+          <a href="flow-system.html" class="active auth-only" data-i18n="navFlow">Systemflyt</a>
+        </nav>
+      </aside>
+      <div class="content">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button id="navToggle" class="nav-toggle btn-secondary" aria-expanded="false">☰</button>
+            <h1>Systemflyt (6 lag)</h1>
+          </div>
+          <div class="topbar-actions">
+            <button id="themeToggle" class="btn-icon btn-secondary">🌙</button>
+            <button id="languageToggle" class="btn-icon btn-secondary">🇬🇧</button>
+            <button id="authAction" class="btn-secondary">Logg ut</button>
+            <img id="topbarAvatar" class="avatar" src="" alt="Profil" />
+          </div>
+        </header>
+
+        <main class="page">
+          <section class="panel">
+            <h2>Live status fra systemet</h2>
+            <div class="grid">
+              <article class="kpi-card"><p class="muted">Auth UID</p><p id="flowAuthUid">-</p></article>
+              <article class="kpi-card"><p class="muted">Ambassador status</p><p id="flowAmbassadorStatus">-</p></article>
+              <article class="kpi-card"><p class="muted">Referral code</p><p id="flowReferralCode">-</p></article>
+              <article class="kpi-card"><p class="muted">Leads totalt</p><p id="flowLeadCount">0</p></article>
+              <article class="kpi-card"><p class="muted">Approved leads</p><p id="flowApprovedCount">0</p></article>
+              <article class="kpi-card"><p class="muted">Pending payout</p><p id="flowPendingPayout">0 kr</p></article>
+              <article class="kpi-card"><p class="muted">Paid total</p><p id="flowPaidTotal">0 kr</p></article>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Lagene i flyten</h2>
+            <div class="flow-grid">
+              <a class="flow-card" href="flow-auth.html"><strong>1) Auth</strong><span>Firebase identitet og uid.</span></a>
+              <a class="flow-card" href="flow-ambassador.html"><strong>2) Ambassador</strong><span>Profil + status i Firestore.</span></a>
+              <a class="flow-card" href="flow-referral.html"><strong>3) Referral</strong><span>Førsteklikk attribution.</span></a>
+              <a class="flow-card" href="flow-leads.html"><strong>4) Leads</strong><span>`new → contacted → approved/rejected`.</span></a>
+              <a class="flow-card" href="flow-commission.html"><strong>5) Commission</strong><span>available/pending/locked.</span></a>
+              <a class="flow-card" href="flow-payout.html"><strong>6) Payout</strong><span>Admin markerer paid.</span></a>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Flow timeline</h2>
+            <ol id="flowTimeline" class="flow-timeline"></ol>
+          </section>
+        </main>
+        <footer class="site-footer">© Levert av Setai.no</footer>
+      </div>
+    </div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

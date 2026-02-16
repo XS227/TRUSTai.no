@@ -1,6 +1,6 @@
 import { addDoc, collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
-export const LEAD_STATUSES = ['open', 'meeting', 'offer_sent', 'approved', 'payout_requested', 'paid', 'lost'];
+export const LEAD_STATUSES = ['new', 'contacted', 'approved', 'payout_requested', 'paid', 'rejected'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
 
 export const demoDb = {
@@ -21,6 +21,15 @@ export const demoDb = {
   socialShares: []
 };
 
+export function normalizeLeadStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (!normalized) return 'new';
+  if (normalized === 'open') return 'new';
+  if (normalized === 'meeting' || normalized === 'offer_sent') return 'contacted';
+  if (normalized === 'lost') return 'rejected';
+  return normalized;
+}
+
 export function currency(value) {
   return new Intl.NumberFormat('nb-NO', {
     style: 'currency',
@@ -36,10 +45,10 @@ export function formatDate(value) {
 export function calculateAmbassadorTotals(ambassadorId) {
   const ambassador = demoDb.ambassadors.find((item) => item.id === ambassadorId);
   const ambassadorLeads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassadorId);
-  const approvedLeads = ambassadorLeads.filter((lead) => ['approved', 'payout_requested', 'paid'].includes(String(lead.status || '').toLowerCase()));
+  const approvedLeads = ambassadorLeads.filter((lead) => ['approved', 'payout_requested', 'paid'].includes(normalizeLeadStatus(lead.status)));
   const pipelineLeads = ambassadorLeads.filter((lead) => {
-    const status = String(lead.status || '').toLowerCase();
-    return !['approved', 'payout_requested', 'paid', 'lost'].includes(status);
+    const status = normalizeLeadStatus(lead.status);
+    return !['approved', 'payout_requested', 'paid', 'rejected'].includes(status);
   });
   const revenue = approvedLeads.reduce((sum, lead) => sum + Number(lead.dealValue || 0), 0);
   const rate = Number(ambassador?.commissionRate || 0);
@@ -84,7 +93,7 @@ export function calculateAmbassadorTotals(ambassadorId) {
 }
 
 export function captureLeadCommission(lead) {
-  const status = String(lead.status || '').toLowerCase();
+  const status = normalizeLeadStatus(lead.status);
   const isApproved = ['approved', 'payout_requested', 'paid'].includes(status);
   const value = Number(lead.value ?? lead.dealValue ?? 0);
   const commissionRate = Number(lead.commissionRate ?? 0.1);
@@ -92,6 +101,7 @@ export function captureLeadCommission(lead) {
   if (!isApproved) {
     return {
       ...lead,
+      status,
       value: 0,
       dealValue: 0,
       commissionAmount: 0,
@@ -112,6 +122,7 @@ export function captureLeadCommission(lead) {
 
   return {
     ...lead,
+    status,
     value,
     dealValue: value,
     commissionRate,
@@ -154,7 +165,7 @@ export async function createLeadInStore(db, { name, company, email }) {
     normalizedCompany,
     email,
     ambassadorId: ambassadorId || null,
-    status: 'open',
+    status: 'new',
     value: 0,
     dealValue: 0,
     commissionRate: 0.1,

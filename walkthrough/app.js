@@ -7,6 +7,7 @@ import {
   currency,
   demoDb,
   formatDate,
+  normalizeLeadStatus,
   subscribeToAmbassadorsInStore,
   subscribeToLeadsInStore,
   updateLeadInStore
@@ -43,7 +44,8 @@ const TRANSLATIONS = {
     navAmbassador: 'Ambassadørdashboard',
     navAdmin: 'Admin-panel',
     navProfile: 'Min profil',
-    navPayout: 'Utbetalinger'
+    navPayout: 'Utbetalinger',
+    navFlow: 'Systemflyt'
   },
   en: {
     authIn: 'Log in',
@@ -54,7 +56,8 @@ const TRANSLATIONS = {
     navAmbassador: 'Ambassador dashboard',
     navAdmin: 'Admin panel',
     navProfile: 'My profile',
-    navPayout: 'Payouts'
+    navPayout: 'Payouts',
+    navFlow: 'System flow'
   }
 };
 
@@ -70,7 +73,7 @@ const authState = {
 
 
 function getLeadPayoutBucket(lead) {
-  const status = String(lead.status || '').toLowerCase();
+  const status = normalizeLeadStatus(lead.status);
   const payoutStatus = String(lead.payoutStatus || '').toLowerCase();
   if (status !== 'approved' && status !== 'payout_requested' && status !== 'paid') return 'n/a';
   if (status === 'paid' || payoutStatus === 'paid' || payoutStatus === 'locked') return 'paid';
@@ -474,7 +477,7 @@ function renderAdmin() {
       <td>${lead.ambassadorId || 'Ingen'}</td>
       <td><span class="badge info">${lead.status}</span></td>
       <td>${payoutBadgeLabel(payoutBucket)}</td>
-      <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${String(lead.status || '').toLowerCase() === 'approved' ? '' : 'disabled'} /></td>
+      <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${['approved', 'payout_requested', 'paid'].includes(normalizeLeadStatus(lead.status)) ? '' : 'disabled'} /></td>
       <td>${currency(lead.commissionAmount || 0)}</td>
       <td><button class="btn-secondary open-status-modal" data-id="${lead.id}">Endre</button></td>
     </tr>`;
@@ -523,6 +526,8 @@ function renderAdmin() {
       </td>
     </tr>`;
   }).join('');
+
+  renderFlowPage();
 }
 
 function recalculateLeadCommission(lead) {
@@ -662,6 +667,7 @@ function initAdminPage() {
     demoDb.payouts.push({ ambassadorId, paidOut, paidAt: `${payoutDate}T00:00:00.000Z` });
     renderAdmin();
     renderAmbassadorDashboard();
+    renderFlowPage();
   });
 
   document.querySelector('#closeStatusModal')?.addEventListener('click', closeStatusModal);
@@ -713,6 +719,7 @@ function renderAmbassadorDashboard() {
   leadList.innerHTML = leads.map((lead) => `<tr><td>${lead.company}</td><td>${lead.name}</td><td>${lead.status}</td><td>${currency(lead.dealValue)}</td><td>${currency(lead.commissionAmount)}</td></tr>`).join('');
   const emptyState = document.querySelector('#ambassadorEmptyState');
   if (emptyState) emptyState.hidden = leads.length > 0;
+  renderFlowPage();
 }
 
 function initAmbassadorTabs() {
@@ -725,6 +732,7 @@ function initAmbassadorTabs() {
     tabs.querySelectorAll('.tab-btn').forEach((item) => item.classList.remove('active'));
     tab.classList.add('active');
     renderAmbassadorDashboard();
+    renderFlowPage();
   });
 }
 
@@ -861,28 +869,28 @@ function buildChartData(leads = []) {
   });
   const monthMap = new Map(months.map((item) => [item.key, item]));
 
-  const stageCounters = { Open: 0, Meeting: 0, 'Offer sent': 0, Approved: 0 };
+  const stageCounters = { New: 0, Contacted: 0, Approved: 0, Rejected: 0 };
   const channelCounters = new Map();
 
   leads.forEach((lead) => {
     const createdAt = toDate(lead.createdAt) || new Date();
     const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
     const monthBucket = monthMap.get(monthKey);
-    const status = String(lead.status || '').toLowerCase();
+    const status = normalizeLeadStatus(lead.status);
     const value = Number(lead.dealValue ?? lead.value ?? 0);
     const commission = Number(lead.commissionAmount ?? lead.commission ?? Math.round(value * Number(lead.commissionRate || DEFAULT_COMMISSION_RATE)));
 
     if (monthBucket && ['approved', 'payout_requested', 'paid'].includes(status)) {
       monthBucket.revenue += value;
     }
-    if (monthBucket && ['offer_sent', 'approved', 'payout_requested', 'paid'].includes(status)) {
+    if (monthBucket && ['contacted', 'approved', 'payout_requested', 'paid'].includes(status)) {
       monthBucket.offerCount += 1;
     }
 
-    if (status === 'open') stageCounters.Open += 1;
-    else if (status === 'meeting') stageCounters.Meeting += 1;
-    else if (status === 'offer_sent') stageCounters['Offer sent'] += 1;
+    if (status === 'new') stageCounters.New += 1;
+    else if (status === 'contacted') stageCounters.Contacted += 1;
     else if (['approved', 'payout_requested', 'paid'].includes(status)) stageCounters.Approved += 1;
+    else if (status === 'rejected') stageCounters.Rejected += 1;
 
     const channelLabel = String(lead.channel || lead.source || 'Ukjent').trim() || 'Ukjent';
     channelCounters.set(channelLabel, (channelCounters.get(channelLabel) || 0) + 1);
@@ -903,6 +911,44 @@ function buildChartData(leads = []) {
 }
 
 
+function renderFlowPage() {
+  const uidNode = document.querySelector('#flowAuthUid');
+  const ambassadorNode = document.querySelector('#flowAmbassadorStatus');
+  const referralNode = document.querySelector('#flowReferralCode');
+  const leadNode = document.querySelector('#flowLeadCount');
+  const approvedNode = document.querySelector('#flowApprovedCount');
+  const pendingNode = document.querySelector('#flowPendingPayout');
+  const paidNode = document.querySelector('#flowPaidTotal');
+  const timelineNode = document.querySelector('#flowTimeline');
+  if (!uidNode && !ambassadorNode && !referralNode && !leadNode && !approvedNode && !pendingNode && !paidNode && !timelineNode) return;
+
+  const ambassadorId = resolveCurrentAmbassadorId();
+  const ambassador = demoDb.ambassadors.find((item) => item.id === ambassadorId);
+  const totals = calculateAmbassadorTotals(ambassadorId);
+  const referralCode = localStorage.getItem('ambassadorRef') || ambassador?.referralCode || getShortReferralCode(ambassadorId);
+
+  if (uidNode) uidNode.textContent = authState.user?.uid || 'Ikke innlogget';
+  if (ambassadorNode) ambassadorNode.textContent = ambassador?.status || 'Pending';
+  if (referralNode) referralNode.textContent = referralCode || '—';
+  if (leadNode) leadNode.textContent = String(totals.leads || 0);
+  if (approvedNode) approvedNode.textContent = String(totals.won || 0);
+  if (pendingNode) pendingNode.textContent = currency(totals.pending || 0);
+  if (paidNode) paidNode.textContent = currency(totals.paid || 0);
+
+  if (timelineNode) {
+    const today = new Date().toISOString().slice(0, 10);
+    timelineNode.innerHTML = `
+      <li><strong>${today}</strong> · Auth user opprettet (${authState.user?.uid ? 'uid satt' : 'ikke innlogget enda'})</li>
+      <li><strong>${today}</strong> · Ambassador-profil ${ambassador ? `funnet (${ambassador.status})` : 'mangler'}</li>
+      <li><strong>${today}</strong> · Referral-kode aktiv: ${referralCode || 'ingen'}</li>
+      <li><strong>${today}</strong> · Leads totalt: ${totals.leads}</li>
+      <li><strong>${today}</strong> · Approved leads: ${totals.won}</li>
+      <li><strong>${today}</strong> · Payout pending/paid: ${currency(totals.pending)} / ${currency(totals.paid)}</li>
+    `;
+  }
+}
+
+
 function subscribeToFirestoreLeads() {
   subscribeToLeadsInStore(db, (firestoreLeads) => {
     demoDb.leads = firestoreLeads.map((lead) => captureLeadCommission(lead));
@@ -910,6 +956,7 @@ function subscribeToFirestoreLeads() {
     refreshAmbassadorCharts();
     renderAdmin();
     renderAmbassadorDashboard();
+    renderFlowPage();
   });
 }
 
@@ -933,6 +980,7 @@ function subscribeToFirestoreAmbassadors() {
     }));
     renderAdmin();
     renderAmbassadorDashboard();
+    renderFlowPage();
   });
 }
 
@@ -952,6 +1000,7 @@ renderAmbassadorDashboard();
 initProfilePage();
 initInvoicePage();
 syncProfileUi();
+renderFlowPage();
 setAmbassadorChartData(buildChartData(demoDb.leads));
 initAmbassadorCharts();
 subscribeToFirestoreLeads();
