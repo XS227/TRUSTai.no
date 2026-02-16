@@ -197,9 +197,13 @@ function normalizePath(path) {
 }
 
 function getBasePath() {
+  const fromModule = normalizePath(new URL('.', import.meta.url).pathname);
+  if (fromModule) return fromModule;
+
   const normalizedPath = normalizePath(window.location.pathname);
-  const deploymentPath = normalizedPath.match(/^(.*?\/animer\/\d+)(?:\/|$)/i)?.[1];
-  if (deploymentPath) return deploymentPath;
+  const walkthroughPath = normalizedPath.match(/^(.*?\/walkthrough)(?:\/|$)/i)?.[1];
+  if (walkthroughPath) return walkthroughPath;
+
   const currentDirectory = normalizedPath.replace(/\/[^/]+$/, '');
   return currentDirectory || '';
 }
@@ -221,7 +225,8 @@ function getShortReferralCode(ambassadorId) {
 function getAmbassadorReferralLink(ambassadorId = 'amb123') {
   const basePath = getBasePath();
   const safeAmbassadorCode = encodeURIComponent(getShortReferralCode(ambassadorId));
-  return `${window.location.origin}${basePath}/${safeAmbassadorCode}`;
+  const target = encodeURIComponent(getDefaultReferralTarget());
+  return `${window.location.origin}${basePath}/referral.html?ref=${safeAmbassadorCode}&target=${target}`;
 }
 
 function getDefaultReferralTarget() {
