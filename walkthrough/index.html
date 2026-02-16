@@ -128,5 +128,68 @@
       </div>
     </div>
     <script type="module" src="app.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "DIN_API_KEY",
+        authDomain: "DIN_AUTH_DOMAIN",
+        projectId: "DIN_PROJECT_ID",
+        storageBucket: "DIN_BUCKET",
+        messagingSenderId: "DIN_SENDER_ID",
+        appId: "DIN_APP_ID"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Cookie helper
+      function getCookie(name) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? match[2] : null;
+      }
+
+      document.getElementById("priceForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const messageBox = document.getElementById("formMessage");
+        messageBox.textContent = "Sender...";
+
+        try {
+          const ambassadorId = getCookie("ambassadorRef");
+
+          await addDoc(collection(db, "leads"), {
+            companyName: document.getElementById("companyName").value,
+            contactName: document.getElementById("contactName").value,
+            email: document.getElementById("email").value,
+            phone: document.getElementById("phone").value || null,
+            filmType: document.getElementById("filmType").value || null,
+            description: document.getElementById("description").value || null,
+
+            ambassadorId: ambassadorId || null,
+            status: "open",
+            commissionPercent: 0,
+            commissionAmount: 0,
+
+            source: "website",
+            landingPage: "be-om-pris",
+
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+
+          messageBox.style.color = "green";
+          messageBox.textContent = "Takk! Vi tar kontakt med deg snart.";
+
+          document.getElementById("priceForm").reset();
+
+        } catch (error) {
+          console.error(error);
+          messageBox.style.color = "red";
+          messageBox.textContent = "Noe gikk galt. Prøv igjen.";
+        }
+      });
+    </script>
   </body>
 </html>
