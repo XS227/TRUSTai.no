@@ -41,6 +41,13 @@
               <button id="loginGoogle" class="btn-primary">Fortsett med Google</button>
               <button id="loginFacebook" class="btn-secondary">Fortsett med Facebook</button>
             </div>
+            <form id="demoAdminLoginForm" class="form-grid" style="margin-top:12px;">
+              <h3>Demo admin for investorpresentasjon</h3>
+              <label>Brukernavn<input name="username" autocomplete="username" required /></label>
+              <label>Passord<input name="password" type="password" autocomplete="current-password" required /></label>
+              <button type="submit" class="btn-secondary">Logg inn som demo SuperAdmin</button>
+              <p id="demoAdminMessage" class="muted" aria-live="polite"></p>
+            </form>
             <p id="authMessage" class="muted" aria-live="polite"></p>
           </section>
 
