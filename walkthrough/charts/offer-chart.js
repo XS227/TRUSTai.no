@@ -1,18 +1,17 @@
-import { analyticsSeries } from '../data-store.js';
 import { getChartTheme } from './theme.js';
 
-function renderFallback(canvas, reason) {
+function renderFallback(canvas, reason, analyticsSeries) {
   const wrap = canvas.closest('.chart-wrap');
   if (!wrap) return;
   const totalOffers = analyticsSeries.reduce((sum, item) => sum + item.offerCount, 0);
   wrap.innerHTML = `<div class="chart-fallback"><p>${reason}</p><p>Tilbud totalt: ${totalOffers}</p></div>`;
 }
 
-export function initOfferChart() {
+export function initOfferChart(analyticsSeries = []) {
   const canvas = document.querySelector('#offerChart');
   if (!canvas) return;
-  if (!window.Chart) return renderFallback(canvas, 'Chart.js utilgjengelig');
-  if (!analyticsSeries.length) return renderFallback(canvas, 'Ingen datagrunnlag funnet.');
+  if (!window.Chart) return renderFallback(canvas, 'Chart.js utilgjengelig', analyticsSeries);
+  if (!analyticsSeries.length) return renderFallback(canvas, 'Ingen datagrunnlag funnet.', analyticsSeries);
 
   const theme = getChartTheme();
 

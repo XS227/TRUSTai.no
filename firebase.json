@@ -3,6 +3,10 @@
     "public": "public",
     "rewrites": [
       {
+        "source": "/animer/12/amb**",
+        "destination": "/referral.html"
+      },
+      {
         "source": "/animer/12/a/**",
         "destination": "/animer/12/walkthrough/referral.html"
       }

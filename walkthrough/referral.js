@@ -1,16 +1,22 @@
+function normalizeReferralCode(value) {
+  const normalized = String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!normalized) return '';
+  return normalized.startsWith('amb') ? normalized : `amb${normalized.slice(0, 8)}`;
+}
+
 function extractReferralCode(pathname) {
-  const parts = String(pathname || '')
-    .split('/')
-    .filter(Boolean);
-
-  if (!parts.length) return '';
-
-  const aIndex = parts.lastIndexOf('a');
-  if (aIndex >= 0 && parts[aIndex + 1]) {
-    return decodeURIComponent(parts[aIndex + 1]).trim().toUpperCase();
+  const path = String(pathname || '');
+  const legacyMatch = path.match(/\/a\/([^/?#]+)/i);
+  if (legacyMatch?.[1]) {
+    return normalizeReferralCode(decodeURIComponent(legacyMatch[1]));
   }
 
-  return decodeURIComponent(parts[parts.length - 1]).trim().toUpperCase();
+  const shortMatch = path.match(/\/(amb[0-9a-z]+)(?:\/|$|\?|#)/i);
+  if (shortMatch?.[1]) {
+    return normalizeReferralCode(decodeURIComponent(shortMatch[1]));
+  }
+
+  return '';
 }
 
 export function captureReferral() {

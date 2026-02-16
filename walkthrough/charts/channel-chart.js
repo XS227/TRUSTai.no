@@ -1,4 +1,3 @@
-import { revenueByChannel } from '../data-store.js';
 import { getChartTheme } from './theme.js';
 
 function renderFallback(canvas, reason) {
@@ -7,7 +6,7 @@ function renderFallback(canvas, reason) {
   wrap.innerHTML = `<div class="chart-fallback">${reason}</div>`;
 }
 
-export function initChannelChart() {
+export function initChannelChart(revenueByChannel = []) {
   const canvas = document.querySelector('#channelChart');
   if (!canvas) return;
   if (!window.Chart) return renderFallback(canvas, 'Chart.js utilgjengelig');
@@ -19,7 +18,7 @@ export function initChannelChart() {
     type: 'doughnut',
     data: {
       labels: revenueByChannel.map((d) => d.label),
-      datasets: [{ data: revenueByChannel.map((d) => d.value), backgroundColor: [theme.primary, theme.success, theme.warning] }]
+      datasets: [{ data: revenueByChannel.map((d) => d.value), backgroundColor: [theme.primary, theme.success, theme.warning, theme.info] }]
     },
     options: {
       responsive: true,

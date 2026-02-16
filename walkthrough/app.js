@@ -11,7 +11,7 @@ import {
   subscribeToLeadsInStore,
   updateLeadInStore
 } from './data-store.js';
-import { initAmbassadorCharts, refreshAmbassadorCharts } from './charts/index.js';
+import { initAmbassadorCharts, refreshAmbassadorCharts, setAmbassadorChartData } from './charts/index.js';
 import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
 import { getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
@@ -201,10 +201,24 @@ function getBasePath() {
   return currentDirectory || '';
 }
 
-function getAmbassadorReferralLink(ambassadorId = 'AMB123') {
+function normalizeReferralCode(value) {
+  const normalized = String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!normalized) return '';
+  return normalized.startsWith('amb') ? normalized : `amb${normalized.slice(0, 8)}`;
+}
+
+function getShortReferralCode(ambassadorId) {
+  const source = String(ambassadorId || '').trim();
+  if (!source) return 'amb123';
+  const byExisting = normalizeReferralCode(source);
+  if (byExisting.startsWith('amb')) return byExisting;
+  return `amb${source.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8)}`;
+}
+
+function getAmbassadorReferralLink(ambassadorId = 'amb123') {
   const basePath = getBasePath();
-  const safeAmbassadorId = encodeURIComponent(String(ambassadorId || 'AMB123').toUpperCase());
-  return `${window.location.origin}${basePath}/a/${safeAmbassadorId}`;
+  const safeAmbassadorCode = encodeURIComponent(getShortReferralCode(ambassadorId));
+  return `${window.location.origin}${basePath}/${safeAmbassadorCode}`;
 }
 
 function getDefaultReferralTarget() {
@@ -213,7 +227,8 @@ function getDefaultReferralTarget() {
 
 function resolveCurrentAmbassadorId() {
   if (authState.user?.uid) return authState.user.uid;
-  return (localStorage.getItem('ambassadorRef') || demoDb.ambassadors[0]?.id || '').toUpperCase();
+  const ref = localStorage.getItem('ambassadorRef') || demoDb.ambassadors[0]?.id || '';
+  return String(ref).trim();
 }
 
 async function isAdmin(user) {
@@ -292,17 +307,22 @@ function initNavbar() {
 }
 
 function getReferralFromPath(pathname) {
-  const match = String(pathname || '').match(/\/a\/([^/?#]+)/i);
-  return match?.[1] ? decodeURIComponent(match[1]).trim().toUpperCase() : null;
+  const path = String(pathname || '');
+  const legacy = path.match(/\/a\/([^/?#]+)/i);
+  if (legacy?.[1]) return normalizeReferralCode(decodeURIComponent(legacy[1]));
+
+  const shortCode = path.match(/\/(amb[0-9a-z]+)(?:\/|$|\?|#)/i);
+  if (shortCode?.[1]) return normalizeReferralCode(decodeURIComponent(shortCode[1]));
+  return null;
 }
 
 function trackReferralFromUrl() {
   const url = new URL(window.location.href);
-  const ref = (url.searchParams.get('ref') || getReferralFromPath(url.pathname) || '').trim().toUpperCase();
+  const ref = normalizeReferralCode(url.searchParams.get('ref') || getReferralFromPath(url.pathname) || '');
   const target = url.searchParams.get('target') || getDefaultReferralTarget();
   if (!ref) return;
 
-  const existingRef = (localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || '').trim().toUpperCase();
+  const existingRef = normalizeReferralCode(localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || '');
   const attributedRef = existingRef || ref;
 
   demoDb.referralClicks.push({ ambassadorId: ref, timestamp: new Date().toISOString(), userAgent: navigator.userAgent });
@@ -323,6 +343,7 @@ async function ensureAmbassadorProfile(user) {
       email: user.email,
       status: 'pending',
       commissionRate: 0.1,
+      referralCode: getShortReferralCode(user.uid),
       createdAt: serverTimestamp()
     });
   }
@@ -366,13 +387,7 @@ window.loginWithGoogle = async () => {
 };
 
 function loginWithFacebookDemo() {
-  demoDb.userProfile.provider = 'Facebook';
-  demoDb.userProfile.avatarUrl = 'https://i.pravatar.cc/120?img=32';
-  localStorage.setItem('isLoggedIn', 'true');
-  hideProtectedNavigation(true);
-  setAuthMessage('Facebook demo-login aktivert for MVP.');
-  syncProfileUi();
-  setLang(getCurrentLang());
+  setAuthMessage('Facebook-innlogging er ikke aktivert i produksjon. Bruk Google.');
 }
 
 async function createLead({ name, company, email }) {
@@ -822,9 +837,77 @@ function initInvoicePage() {
 }
 
 
+function toDate(value) {
+  if (!value) return null;
+  if (typeof value?.toDate === 'function') return value.toDate();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function buildChartData(leads = []) {
+  const monthFormatter = new Intl.DateTimeFormat('nb-NO', { month: 'short' });
+  const months = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - (5 - index));
+    return {
+      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+      month: monthFormatter.format(date).replace('.', ''),
+      revenue: 0,
+      offerCount: 0,
+      available: 0,
+      paid: 0
+    };
+  });
+  const monthMap = new Map(months.map((item) => [item.key, item]));
+
+  const stageCounters = { Open: 0, Meeting: 0, 'Offer sent': 0, Approved: 0 };
+  const channelCounters = new Map();
+
+  leads.forEach((lead) => {
+    const createdAt = toDate(lead.createdAt) || new Date();
+    const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
+    const monthBucket = monthMap.get(monthKey);
+    const status = String(lead.status || '').toLowerCase();
+    const value = Number(lead.dealValue ?? lead.value ?? 0);
+    const commission = Number(lead.commissionAmount ?? lead.commission ?? Math.round(value * Number(lead.commissionRate || DEFAULT_COMMISSION_RATE)));
+
+    if (monthBucket && ['approved', 'payout_requested', 'paid'].includes(status)) {
+      monthBucket.revenue += value;
+    }
+    if (monthBucket && ['offer_sent', 'approved', 'payout_requested', 'paid'].includes(status)) {
+      monthBucket.offerCount += 1;
+    }
+
+    if (status === 'open') stageCounters.Open += 1;
+    else if (status === 'meeting') stageCounters.Meeting += 1;
+    else if (status === 'offer_sent') stageCounters['Offer sent'] += 1;
+    else if (['approved', 'payout_requested', 'paid'].includes(status)) stageCounters.Approved += 1;
+
+    const channelLabel = String(lead.channel || lead.source || 'Ukjent').trim() || 'Ukjent';
+    channelCounters.set(channelLabel, (channelCounters.get(channelLabel) || 0) + 1);
+
+    if (monthBucket) {
+      const payoutStatus = String(lead.payoutStatus || '').toLowerCase();
+      if (status === 'paid' || payoutStatus === 'paid' || payoutStatus === 'locked') monthBucket.paid += commission;
+      if (status === 'approved' || payoutStatus === 'available') monthBucket.available += commission;
+    }
+  });
+
+  const analyticsSeries = months.map(({ month, revenue, offerCount }) => ({ month, revenue, offerCount }));
+  const payoutTrendSeries = months.map(({ month, available, paid }) => ({ month, available, paid }));
+  const leadStageDistribution = Object.entries(stageCounters).map(([label, value]) => ({ label, value })).filter((item) => item.value > 0);
+  const revenueByChannel = [...channelCounters.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([label, value]) => ({ label, value }));
+
+  return { analyticsSeries, payoutTrendSeries, leadStageDistribution, revenueByChannel };
+}
+
+
 function subscribeToFirestoreLeads() {
   subscribeToLeadsInStore(db, (firestoreLeads) => {
     demoDb.leads = firestoreLeads.map((lead) => captureLeadCommission(lead));
+    setAmbassadorChartData(buildChartData(demoDb.leads));
+    refreshAmbassadorCharts();
     renderAdmin();
     renderAmbassadorDashboard();
   });
@@ -844,6 +927,7 @@ function subscribeToFirestoreAmbassadors() {
       name: ambassador.name || ambassador.email || ambassador.id,
       email: ambassador.email || '',
       commissionRate: Number(ambassador.commissionRate ?? DEFAULT_COMMISSION_RATE),
+      referralCode: ambassador.referralCode || getShortReferralCode(ambassador.id),
       status: normalizeAmbassadorStatus(ambassador.status),
       createdAt: ambassador.createdAt || null
     }));
@@ -868,6 +952,7 @@ renderAmbassadorDashboard();
 initProfilePage();
 initInvoicePage();
 syncProfileUi();
+setAmbassadorChartData(buildChartData(demoDb.leads));
 initAmbassadorCharts();
 subscribeToFirestoreLeads();
 subscribeToFirestoreAmbassadors();
