@@ -1,6 +1,6 @@
 import { addDoc, collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
-export const LEAD_STATUSES = ['new', 'contacted', 'approved', 'payout_requested', 'paid', 'rejected'];
+export const LEAD_STATUSES = ['open', 'meeting_booked', 'offer_sent', 'approved', 'rejected'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
 
 export const demoDb = {
@@ -23,9 +23,10 @@ export const demoDb = {
 
 export function normalizeLeadStatus(status) {
   const normalized = String(status || '').trim().toLowerCase();
-  if (!normalized) return 'new';
-  if (normalized === 'open') return 'new';
-  if (normalized === 'meeting' || normalized === 'offer_sent') return 'contacted';
+  if (!normalized) return 'open';
+  if (normalized === 'new') return 'open';
+  if (normalized === 'meeting' || normalized === 'contacted') return 'meeting_booked';
+  if (normalized === 'payout_requested' || normalized === 'paid') return 'approved';
   if (normalized === 'lost') return 'rejected';
   return normalized;
 }
@@ -45,10 +46,10 @@ export function formatDate(value) {
 export function calculateAmbassadorTotals(ambassadorId) {
   const ambassador = demoDb.ambassadors.find((item) => item.id === ambassadorId);
   const ambassadorLeads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassadorId);
-  const approvedLeads = ambassadorLeads.filter((lead) => ['approved', 'payout_requested', 'paid'].includes(normalizeLeadStatus(lead.status)));
+  const approvedLeads = ambassadorLeads.filter((lead) => ['approved'].includes(normalizeLeadStatus(lead.status)));
   const pipelineLeads = ambassadorLeads.filter((lead) => {
     const status = normalizeLeadStatus(lead.status);
-    return !['approved', 'payout_requested', 'paid', 'rejected'].includes(status);
+    return !['approved', 'rejected'].includes(status);
   });
   const revenue = approvedLeads.reduce((sum, lead) => sum + Number(lead.dealValue || 0), 0);
   const rate = Number(ambassador?.commissionRate || 0);
@@ -94,9 +95,9 @@ export function calculateAmbassadorTotals(ambassadorId) {
 
 export function captureLeadCommission(lead) {
   const status = normalizeLeadStatus(lead.status);
-  const isApproved = ['approved', 'payout_requested', 'paid'].includes(status);
-  const value = Number(lead.value ?? lead.dealValue ?? 0);
-  const commissionRate = Number(lead.commissionRate ?? 0.1);
+  const isApproved = ['approved'].includes(status);
+  const approvedAmount = Number(lead.approvedAmount ?? lead.offerAmount ?? lead.value ?? lead.dealValue ?? 0);
+  const commissionPercent = Number(lead.commissionPercent ?? (Number(lead.commissionRate ?? 0.1) * 100));
 
   if (!isApproved) {
     return {
@@ -104,6 +105,7 @@ export function captureLeadCommission(lead) {
       status,
       value: 0,
       dealValue: 0,
+      approvedAmount: 0,
       commissionAmount: 0,
       commission: 0,
       payoutStatus: null,
@@ -111,29 +113,31 @@ export function captureLeadCommission(lead) {
     };
   }
 
-  const commission = Math.round(value * commissionRate);
-  const payoutStatusMap = {
-    approved: 'available',
-    payout_requested: 'pending',
-    paid: 'locked'
-  };
-  const leadPayoutStatus = String(lead.payoutStatus || '').toLowerCase();
-  const payoutStatus = payoutStatusMap[leadPayoutStatus] || payoutStatusMap[status] || leadPayoutStatus || 'available';
+  const commission = Math.round(approvedAmount * (commissionPercent / 100));
 
   return {
     ...lead,
     status,
-    value,
-    dealValue: value,
-    commissionRate,
+    value: approvedAmount,
+    dealValue: approvedAmount,
+    approvedAmount,
+    commissionPercent,
+    commissionRate: commissionPercent / 100,
     commission,
     commissionAmount: commission,
-    payoutStatus
+    payoutStatus: lead.payoutStatus || 'available'
   };
 }
 
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
 export async function createLeadInStore(db, { name, company, email }) {
-  const ambassadorRef = String(localStorage.getItem('ambassadorRef') || '').trim();
+  const ambassadorRef = String(localStorage.getItem('ambassadorRef') || getCookie('ambassadorRef') || '').trim();
   let ambassadorId = ambassadorRef || null;
 
   if (ambassadorRef && /^amb[0-9a-z]+$/i.test(ambassadorRef)) {
@@ -162,17 +166,27 @@ export async function createLeadInStore(db, { name, company, email }) {
   const leadPayload = {
     name,
     company,
+    contactName: name,
+    companyName: company,
     normalizedCompany,
     email,
+    phone: '',
     ambassadorId: ambassadorId || null,
-    status: 'new',
+    referralCode: /^amb[0-9a-z]+$/i.test(ambassadorRef) ? ambassadorRef.toLowerCase() : null,
+    source: 'direct',
+    landingPage: 'training',
+    status: 'open',
+    offerAmount: 0,
+    approvedAmount: 0,
     value: 0,
     dealValue: 0,
+    commissionPercent: 10,
     commissionRate: 0.1,
     commissionAmount: 0,
     commission: 0,
     // NOTE: Frontend-beregning er kun MVP. Flytt provisjonsberegning/validering til Cloud Function i produksjon.
-    createdAt: serverTimestamp()
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
   };
 
   const leadRef = await addDoc(collection(db, 'leads'), leadPayload);

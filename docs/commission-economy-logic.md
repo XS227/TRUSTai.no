@@ -1,76 +1,62 @@
-# Komplett økonomilogikk for Animer
+# Økonomilogikk for MVP (forenklet)
 
-Dette er en operativ spesifikasjon for hvordan provisjon flyter mellom **tilgjengelig**, **reservert** og **utbetalt**, med full historikk.
+MVP bruker en flat økonomimodell uten wallet/ledger-collections.
 
-## 1) Saldomodell
+## 1) Kilde for provisjon
 
-Per ambassadør (`wallets/{ambassadorId}`):
-- `pendingNok`: opptjent men ikke frigitt (f.eks. angrefrist, fakturavalidering)
-- `availableNok`: klar til utbetaling
-- `paidLifetimeNok`: total historisk utbetalt
+Provisjon beregnes og lagres på hvert lead:
 
-Formel for kontroll:
-- `netEarned = sum(CREDIT) - sum(DEBIT)` fra ledger
-- `pendingNok + availableNok + paidLifetimeNok` skal være konsistent med statusfordeling per case.
+- `approvedAmount`
+- `commissionPercent`
+- `commissionAmount`
 
-## 2) Statusflyt for provisjon
+Formel:
 
-`commissionCases.status`:
-1. `DRAFT` – grunnlag opprettet, ikke bokført
-2. `EARNED` – bokført til `pendingNok`
-3. `AVAILABLE` – frigitt til `availableNok`
-4. `PAID` – knyttet til payout
-5. `CANCELLED` – annullert før utbetaling
+```txt
+commissionAmount = round(approvedAmount * (commissionPercent / 100))
+```
 
-Tillatte overganger:
-- `DRAFT -> EARNED`
-- `EARNED -> AVAILABLE`
-- `AVAILABLE -> PAID`
-- `DRAFT|EARNED -> CANCELLED`
+Denne beregningen gjøres når lead oppdateres, ikke i visningslaget.
 
-## 3) Ledger-regler (append-only)
+## 2) Hva som teller som opptjent provisjon
 
-Hver økonomisk hendelse skal skrive én rad til `wallets/{id}/ledger/{entryId}`.
+Lead med `status = approved` regnes som opptjent provisjon.
 
-Obligatorisk:
-- `entryType`, `amountNok`, `direction`, `sourceType`, `sourceId`
-- `deltaPendingNok`, `deltaAvailableNok`, `deltaPaidLifetimeNok`
-- `balanceAfter` snapshot
-- `createdAt`, `createdBy`
+Anbefalt aggregering per ambassadør:
+- `totalLeads`
+- `totalRevenue` (sum `approvedAmount`)
+- `totalCommissionEarned` (sum `commissionAmount`)
+- `availableForPayout` (opptjent minus utbetalt)
 
-Ingen oppdatering/sletting av ledger entries.
-Korrigering gjøres med ny `ADJUSTMENT`-entry.
+Disse feltene lagres direkte i `ambassadors/{id}` for rask dashboard-lesing.
 
-## 4) Utbetaling (payout)
+## 3) Payout-status
 
 `payouts.status`:
-- `REQUESTED -> APPROVED -> PROCESSING -> PAID`
-- `PROCESSING -> FAILED` ved feil
+- `pending`
+- `approved`
+- `paid`
+- `rejected`
 
-Ved `PAID`:
-- `availableNok` debiteres
-- `paidLifetimeNok` krediteres
-- tilhørende `commissionCases` settes `PAID` med `payoutId`
+Ved overgang til `paid`:
+1. Sett `paidAt`.
+2. Trekk `amount` fra `ambassadors.availableForPayout`.
 
-## 5) Historikkvisning i UI
+## 4) Datamodell for payout
 
-### Tilgjengelig nå
-- les `wallet.availableNok`
+```json
+{
+  "ambassadorId": "docId",
+  "amount": 12000,
+  "invoiceUrl": "storage-link",
+  "status": "pending",
+  "paidAt": null,
+  "createdAt": "Timestamp"
+}
+```
 
-### Klar til senere
-- les `wallet.pendingNok`
+## 5) Kontrollregler
 
-### Historikk
-- vis sortert ledger (desc på `createdAt`)
-- grupper per måned
-- vis referanse til case/payout
-
-### Reviderbarhet
-- alle tall i dashboard skal kunne spores til ledger-entry og kildeobjekt (`commissionCase` eller `payout`).
-
-## 6) Kontrolljobber
-
-Kjør daglig Cloud Scheduler-jobb:
-1. Rekalkuler wallet fra ledger.
-2. Flag avvik > 0 NOK.
-3. Opprett `auditLogs` event ved avvik.
+- `availableForPayout` må aldri bli negativ.
+- `commissionAmount` skal alltid være et lagret felt på lead.
+- Oppdatering av payout til `paid` og trekk i ambassador bør skje atomisk (transaksjon).
