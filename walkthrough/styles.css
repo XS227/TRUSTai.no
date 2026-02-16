@@ -95,6 +95,34 @@ body {
 .hero-panel {
   gap: 10px;
 }
+
+.hero-split {
+  grid-template-columns: 1.35fr 1fr;
+  align-items: stretch;
+}
+
+.earnings-chart {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(70px, 1fr));
+  gap: 10px;
+  align-items: end;
+  min-height: 180px;
+  margin-top: 8px;
+}
+
+.earnings-bar {
+  background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+  border-radius: 12px 12px 8px 8px;
+  min-height: 30px;
+  height: var(--bar-height);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 8px;
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+}
 .eyebrow {
   margin: 0;
   color: var(--primary-strong);
@@ -209,6 +237,7 @@ label { display: grid; gap: 4px; color: var(--muted); font-size: .83rem; }
 .nav-toggle { display: none; }
 
 @media (max-width: 900px) {
+  .hero-split { grid-template-columns: 1fr; }
   .sidebar {
     position: static;
     padding: 10px 12px;

@@ -301,6 +301,11 @@ function getDefaultReferralTarget() {
   return `${getBasePath()}/ambassador.html`.replace(/\/\//g, '/');
 }
 
+function redirectToAmbassadorDashboard() {
+  if (!window.location.pathname.endsWith('/index.html') && !window.location.pathname.endsWith('/walkthrough/') && !window.location.pathname.endsWith('/walkthrough')) return;
+  window.location.replace('ambassador.html');
+}
+
 function resolveCurrentAmbassadorId() {
   if (authState.user?.uid) return authState.user.uid;
   const ref = localStorage.getItem('ambassadorRef') || demoDb.ambassadors[0]?.id || '';
@@ -345,6 +350,7 @@ function initAuthStateSync() {
     setLang(getCurrentLang());
     if (user?.email) {
       setAuthMessage(`Innlogget som ${user.email}.`);
+      redirectToAmbassadorDashboard();
     }
   });
 }
@@ -472,6 +478,7 @@ window.loginWithGoogle = async () => {
     setAuthMessage(`Innlogget som ${result.user.email}.`);
     syncProfileUi();
     setLang(getCurrentLang());
+    window.location.assign('ambassador.html');
   } catch (error) {
     if (error?.code === 'auth/popup-blocked') {
       await signInWithRedirect(auth, provider);
@@ -530,7 +537,9 @@ function initLandingPage() {
   const registerMessage = document.querySelector('#registerMessage');
   const demoAdminForm = document.querySelector('#demoAdminLoginForm');
   const demoAdminMessage = document.querySelector('#demoAdminMessage');
-  if (!leadForm) return;
+  const demoAdminModal = document.querySelector('#demoAdminModal');
+  const openDemoAdminModal = document.querySelector('#openDemoAdminModal');
+  const closeDemoAdminModal = document.querySelector('#closeDemoAdminModal');
 
   if (new URLSearchParams(window.location.search).get('blocked') === 'admin') {
     setAuthMessage('Logg inn for å få tilgang til admin-sider.');
@@ -538,20 +547,27 @@ function initLandingPage() {
     setAuthMessage('Kontoen din mangler admin-claim. Sett custom claim (f.eks. isAdmin/admin) og logg inn på nytt.');
   }
 
-  leadForm.addEventListener('submit', async (event) => {
+  openDemoAdminModal?.addEventListener('click', () => demoAdminModal?.classList.add('open'));
+  closeDemoAdminModal?.addEventListener('click', () => demoAdminModal?.classList.remove('open'));
+  demoAdminModal?.addEventListener('click', (event) => {
+    if (event.target === demoAdminModal) demoAdminModal.classList.remove('open');
+  });
+
+  leadForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(leadForm);
     try {
       const lead = await createLead({ name: formData.get('name'), company: formData.get('company'), email: formData.get('email') });
-      leadMessage.textContent = lead.duplicate
-        ? `Lead finnes allerede for ${lead.company}. Eksisterende ambassadør er beholdt.`
-        : `Lead lagret: ${lead.company}`;
+      if (leadMessage) {
+        leadMessage.textContent = lead.duplicate
+          ? `Lead finnes allerede for ${lead.company}. Eksisterende ambassadør er beholdt.`
+          : `Lead lagret: ${lead.company}`;
+      }
       leadForm.reset();
     } catch {
-      leadMessage.textContent = 'Kunne ikke lagre lead.';
+      if (leadMessage) leadMessage.textContent = 'Kunne ikke lagre lead.';
     }
   });
-
 
   demoAdminForm?.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -576,8 +592,19 @@ function initLandingPage() {
     demoDb.userProfile.email = String(formData.get('email') || '');
     demoDb.userProfile.phone = String(formData.get('phone') || '');
     demoDb.userProfile.provider = 'E-post';
-    registerMessage.textContent = 'Konto registrert lokalt i MVP.';
+    if (registerMessage) registerMessage.textContent = 'Konto registrert lokalt i MVP. Sender deg videre...';
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('isAdmin', 'false');
+    authState.user = {
+      uid: demoDb.userProfile.email || `amb-${Date.now()}`,
+      email: demoDb.userProfile.email,
+      displayName: demoDb.userProfile.fullName
+    };
+    authState.isAdmin = false;
+    hideProtectedNavigation(true, false);
     syncProfileUi();
+    setLang(getCurrentLang());
+    window.location.assign('ambassador.html');
   });
 }
 

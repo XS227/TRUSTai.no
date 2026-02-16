@@ -15,7 +15,6 @@
           <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
           <a href="admin.html" class="auth-only" data-i18n="navAdmin">Admin-panel</a>
           <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
-          <a href="payout-support.html" class="auth-only" data-i18n="navPayout">Utbetalinger</a>
           <a href="flow-system.html" class="auth-only" data-i18n="navFlow">Systemflyt</a>
         </nav>
       </aside>
@@ -34,75 +33,60 @@
         </header>
 
         <main class="page">
-          <section class="panel hero-panel">
-            <p class="eyebrow">Velkommen</p>
-            <h2>Hva er Animer Leads?</h2>
-            <p>
-              Animer Leads er et ambassadørdrevet system som hjelper deg å hente inn kvalifiserte kundeemner,
-              følge dem opp, og belønne de som skaper salg.
-            </p>
-            <p class="muted">
-              Plattformen kobler lead capture, oppfølging, provisjon og utbetalinger i ett enkelt flyt-system.
-            </p>
-            <div class="row-actions" style="justify-content:flex-start;">
-              <a class="btn-primary cta-link" href="admin.html">Se SuperAdmin demo</a>
+          <section class="panel hero-panel hero-split">
+            <div>
+              <p class="eyebrow">Velkommen</p>
+              <h2>Animer Leads er din ambassadørmotor for vekst</h2>
+              <p>
+                På én plass kan ambassadører dele leads, følge status i sanntid og få tydelig oversikt over opptjening.
+                Plattformen er laget for enkel onboarding og raske salgsløp.
+              </p>
+              <div class="row-actions" style="justify-content:flex-start;">
+                <button id="openDemoAdminModal" class="btn-secondary">Se demo</button>
+              </div>
             </div>
-          </section>
-
-          <section class="panel">
-            <h2>Logg inn med Firebase Auth</h2>
-            <p class="muted">Hurtig innlogging skjer med Google-konto.</p>
-            <div class="row-actions" style="justify-content:flex-start;">
-              <button id="loginGoogle" class="btn-primary">Fortsett med Google</button>
-              <button id="loginFacebook" class="btn-secondary" hidden>Fortsett med Facebook</button>
-            </div>
-            <p id="authMessage" class="muted" aria-live="polite"></p>
-          </section>
-
-          <section class="panel">
-            <h2>Opprett konto</h2>
-            <p class="muted">Ny konto opprettes med e-post for enkel onboarding.</p>
-            <form id="registerForm" class="form-grid">
-              <label>Fullt navn<input name="fullName" required /></label>
-              <label>E-post<input name="email" type="email" required /></label>
-              <label>Telefon<input name="phone" /></label>
-              <button class="btn-primary" type="submit">Opprett konto med e-post</button>
-              <p id="registerMessage" class="muted" aria-live="polite"></p>
-            </form>
+            <article class="kpi-card">
+              <h3>Bli ambassadør</h3>
+              <p class="muted">Velg innlogging og kom rett inn i din ambassadørside med ekte data.</p>
+              <div class="form-grid">
+                <button id="loginGoogle" class="btn-primary">Fortsett med Google</button>
+                <form id="registerForm" class="form-grid">
+                  <label>Fullt navn<input name="fullName" required /></label>
+                  <label>E-post<input name="email" type="email" required /></label>
+                  <label>Telefon<input name="phone" /></label>
+                  <button class="btn-secondary" type="submit">Bli ambassadør med e-post</button>
+                </form>
+                <p id="authMessage" class="muted" aria-live="polite"></p>
+                <p id="registerMessage" class="muted" aria-live="polite"></p>
+              </div>
+            </article>
           </section>
 
           <section class="panel">
             <h2>Hvordan kan man tjene penger med systemet?</h2>
             <p>
-              Du inviterer leads via din ambassadørlenke. Når et lead blir kunde, får du provisjon basert på avtalt sats.
-              Typisk nivå i demoen er rundt 8–12 % per lukket avtale.
+              Typiske pakker ligger mellom <strong>40 000 kr og 200 000 kr</strong>. Med <strong>4–10 salg per måned</strong>
+              kan en aktiv ambassadør bygge en stabil inntektsstrøm.
             </p>
             <div class="grid">
               <article class="kpi-card">
-                <p class="muted">Estimert salg per lead</p>
-                <p class="kpi">$5k–$25k</p>
+                <p class="muted">Pakkeverdi</p>
+                <p class="kpi">40k–200k</p>
               </article>
               <article class="kpi-card">
-                <p class="muted">Eksempel provisjon</p>
-                <p class="kpi">$400–$3k</p>
+                <p class="muted">Salg / mnd</p>
+                <p class="kpi">4–10</p>
               </article>
               <article class="kpi-card">
-                <p class="muted">Månedlig potensial*</p>
-                <p class="kpi">$2k–$12k+</p>
+                <p class="muted">Potensiell omsetning / mnd</p>
+                <p class="kpi">160k–2M</p>
               </article>
             </div>
-            <p class="muted">*Avhenger av antall leads, kvalitet og lukkingsgrad.</p>
-          </section>
-
-          <section class="panel">
-            <h2>Hva er en ambassadør?</h2>
-            <p>
-              En ambassadør er en person eller partner som anbefaler Animer til relevante bedrifter.
-              Ambassadøren får personlig referanselenke, oversikt over leads og automatisk provisjonssporing.
-            </p>
-            <div class="row-actions" style="justify-content:flex-start;">
-              <a class="btn-primary cta-link" href="ambassador.html">Bli ambassadør</a>
-              <a class="btn-secondary cta-link" href="admin.html">Gå til SuperAdmin demo</a>
+            <div class="earnings-chart" aria-label="Inntektspotensial">
+              <div class="earnings-bar" style="--bar-height: 34%;"><span>4 salg</span></div>
+              <div class="earnings-bar" style="--bar-height: 58%;"><span>6 salg</span></div>
+              <div class="earnings-bar" style="--bar-height: 76%;"><span>8 salg</span></div>
+              <div class="earnings-bar" style="--bar-height: 100%;"><span>10 salg</span></div>
             </div>
           </section>
 
@@ -114,39 +98,33 @@
                 <p>Nei. Systemet er laget for enkel bruk med tydelig dashboard og stegvis flyt.</p>
               </details>
               <details>
-                <summary>Når flyttes lead capture til Min profil?</summary>
-                <p>Lead capture-formen kan flyttes til «Min profil» når onboardingflyten er ferdigstilt.</p>
+                <summary>Hvilken innlogging bør jeg velge?</summary>
+                <p>Google er raskest, men du kan også bli ambassadør med e-post under onboarding.</p>
               </details>
               <details>
-                <summary>Hvordan følger jeg provisjonen min?</summary>
-                <p>Du ser status per lead og provisjon i ambassadørdashboardet, inkludert payout-status.</p>
+                <summary>Hva skjer etter innlogging?</summary>
+                <p>Demo-innhold skjules, og du sendes direkte til din ambassadørside.</p>
               </details>
             </div>
           </section>
-
-          <section class="panel">
-            <h2>Lead capture (MVP)</h2>
-            <p class="muted">Midlertidig plassering på forsiden. Kan flyttes til «Min profil».</p>
-            <form id="leadForm" class="form-grid">
-              <label>Navn<input name="name" required /></label>
-              <label>Firma<input name="company" required /></label>
-              <label>E-post<input name="email" type="email" required /></label>
-              <button class="btn-primary" type="submit">Lagre lead</button>
-              <p id="leadMessage" class="muted"></p>
-            </form>
-          </section>
-
-          <section class="panel">
-            <h2>Demo admin for investorpresentasjon</h2>
-            <form id="demoAdminLoginForm" class="form-grid">
-              <label>Brukernavn<input name="username" autocomplete="username" required /></label>
-              <label>Passord<input name="password" type="password" autocomplete="current-password" required /></label>
-              <button type="submit" class="btn-secondary">Logg inn som demo SuperAdmin</button>
-              <p id="demoAdminMessage" class="muted" aria-live="polite"></p>
-            </form>
-          </section>
         </main>
         <footer class="site-footer">© Levert av Setai.no</footer>
+      </div>
+    </div>
+
+    <div id="demoAdminModal" class="modal-backdrop">
+      <div class="modal">
+        <h2>Demo admin for investorpresentasjon</h2>
+        <p class="muted">Logg inn med demo-bruker for å se SuperAdmin-oppsettet.</p>
+        <form id="demoAdminLoginForm" class="form-grid">
+          <label>Brukernavn<input name="username" autocomplete="username" required /></label>
+          <label>Passord<input name="password" type="password" autocomplete="current-password" required /></label>
+          <div class="row-actions">
+            <button type="button" id="closeDemoAdminModal" class="btn-secondary">Lukk</button>
+            <button type="submit" class="btn-primary">Logg inn som demo admin</button>
+          </div>
+          <p id="demoAdminMessage" class="muted" aria-live="polite"></p>
+        </form>
       </div>
     </div>
     <script type="module" src="app.js"></script>
