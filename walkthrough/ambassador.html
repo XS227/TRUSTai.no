@@ -16,7 +16,6 @@
           <a href="ambassador.html" class="active auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
           <a href="admin.html" class="auth-only" data-i18n="navAdmin">Admin-panel</a>
           <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
-          <a href="payout-support.html" class="auth-only" data-i18n="navPayout">Utbetalinger</a>
           <a href="flow-system.html" class="auth-only" data-i18n="navFlow">Systemflyt</a>
         </nav>
       </aside>
@@ -61,6 +60,19 @@
                 <tbody id="leadList"></tbody>
               </table>
             </div>
+          </section>
+
+
+          <section class="panel">
+            <h2>Lead capture</h2>
+            <p class="muted">Registrer nye leads direkte fra ambassadørsiden.</p>
+            <form id="leadForm" class="form-grid">
+              <label>Navn<input name="name" required /></label>
+              <label>Firma<input name="company" required /></label>
+              <label>E-post<input name="email" type="email" required /></label>
+              <button class="btn-primary" type="submit">Lagre lead</button>
+              <p id="leadMessage" class="muted" aria-live="polite"></p>
+            </form>
           </section>
 
           <section class="panel">

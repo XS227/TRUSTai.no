@@ -14,8 +14,7 @@
           <a href="index.html" data-i18n="navLogin">Login / Onboarding</a>
           <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
           <a href="admin.html" class="auth-only" data-i18n="navAdmin">Admin-panel</a>
-          <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
-          <a href="payout-support.html" class="active auth-only" data-i18n="navPayout">Utbetalinger</a>
+          <a href="profile.html" class="active auth-only" data-i18n="navProfile">Min profil</a>
           <a href="flow-system.html" class="auth-only" data-i18n="navFlow">Systemflyt</a>
         </nav>
       </aside>
@@ -23,7 +22,7 @@
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle btn-secondary" aria-expanded="false">☰</button>
-            <h1>Utbetalinger og faktura</h1>
+            <h1>Utbetalinger flyttet</h1>
           </div>
           <div class="topbar-actions">
             <button id="themeToggle" class="btn-icon btn-secondary" title="Bytt mørk/lys">🌙</button>
@@ -35,26 +34,10 @@
 
         <main class="page">
           <section class="panel">
-            <h2>Last opp faktura</h2>
-            <form id="invoiceForm" class="form-grid">
-              <label>Fakturanummer<input name="invoiceNumber" required /></label>
-              <label>Beløp (NOK)<input name="amount" type="number" min="0" required /></label>
-              <label>Fil (PDF / bilde)
-                <input name="invoiceFile" type="file" accept=".pdf,image/*" required />
-              </label>
-              <button class="btn-primary" type="submit">Last opp</button>
-              <p id="invoiceMessage" class="muted"></p>
-            </form>
-          </section>
-
-          <section class="panel">
-            <h2>Opplastede fakturaer</h2>
-            <div id="invoiceEmptyState" class="empty-state">Ingen fakturaer lastet opp.</div>
-            <div class="table-wrap">
-              <table class="table">
-                <thead><tr><th>Nr</th><th>Beløp</th><th>Fil</th><th>Dato</th></tr></thead>
-                <tbody id="invoiceTableBody"></tbody>
-              </table>
+            <h2>Utbetalinger ligger nå under Min profil</h2>
+            <p class="muted">Du finner opplasting av faktura og historikk på profilsiden.</p>
+            <div class="row-actions" style="justify-content:flex-start;">
+              <a class="btn-primary cta-link" href="profile.html">Gå til Min profil</a>
             </div>
           </section>
         </main>
