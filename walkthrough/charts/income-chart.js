@@ -1,7 +1,6 @@
-import { analyticsSeries } from '../data-store.js';
 import { getChartTheme } from './theme.js';
 
-function renderFallback(canvas, reason) {
+function renderFallback(canvas, reason, analyticsSeries) {
   const wrap = canvas.closest('.chart-wrap');
   if (!wrap) return;
 
@@ -9,11 +8,11 @@ function renderFallback(canvas, reason) {
   wrap.innerHTML = `<div class="chart-fallback"><p>${reason}</p><p>Totalt: ${new Intl.NumberFormat('nb-NO').format(totalRevenue)} kr</p></div>`;
 }
 
-export function initIncomeChart() {
+export function initIncomeChart(analyticsSeries = []) {
   const canvas = document.querySelector('#incomeChart');
   if (!canvas) return;
-  if (!window.Chart) return renderFallback(canvas, 'Chart.js utilgjengelig');
-  if (!analyticsSeries.length) return renderFallback(canvas, 'Ingen datagrunnlag funnet.');
+  if (!window.Chart) return renderFallback(canvas, 'Chart.js utilgjengelig', analyticsSeries);
+  if (!analyticsSeries.length) return renderFallback(canvas, 'Ingen datagrunnlag funnet.', analyticsSeries);
 
   const theme = getChartTheme();
 

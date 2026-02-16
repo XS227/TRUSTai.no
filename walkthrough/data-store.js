@@ -5,13 +5,13 @@ export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
 
 export const demoDb = {
   userProfile: {
-    id: 'user-01',
-    fullName: 'Magnus Q',
-    email: 'm.quaine@gmail.com',
+    id: null,
+    fullName: '',
+    email: '',
     phone: '',
-    provider: 'Google',
-    avatarUrl: 'https://i.pravatar.cc/120?img=12',
-    company: 'Animer AS'
+    provider: '',
+    avatarUrl: '',
+    company: ''
   },
   ambassadors: [],
   referralClicks: [],
@@ -20,38 +20,6 @@ export const demoDb = {
   invoices: [],
   socialShares: []
 };
-
-export const analyticsSeries = [
-  { month: 'Nov', revenue: 12000, offerCount: 4 },
-  { month: 'Des', revenue: 18000, offerCount: 6 },
-  { month: 'Jan', revenue: 26000, offerCount: 8 },
-  { month: 'Feb', revenue: 32000, offerCount: 7 },
-  { month: 'Mar', revenue: 28000, offerCount: 5 },
-  { month: 'Apr', revenue: 35000, offerCount: 9 }
-];
-
-export const revenueByChannel = [
-  { label: 'LinkedIn', value: 45 },
-  { label: 'Facebook', value: 30 },
-  { label: 'X/Twitter', value: 25 }
-];
-
-
-export const payoutTrendSeries = [
-  { month: 'Nov', available: 4200, paid: 1800 },
-  { month: 'Des', available: 5100, paid: 2600 },
-  { month: 'Jan', available: 6100, paid: 3500 },
-  { month: 'Feb', available: 7300, paid: 4200 },
-  { month: 'Mar', available: 6800, paid: 5100 },
-  { month: 'Apr', available: 8200, paid: 6400 }
-];
-
-export const leadStageDistribution = [
-  { label: 'Open', value: 12 },
-  { label: 'Meeting', value: 7 },
-  { label: 'Offer sent', value: 5 },
-  { label: 'Approved', value: 4 }
-];
 
 export function currency(value) {
   return new Intl.NumberFormat('nb-NO', {
@@ -154,7 +122,17 @@ export function captureLeadCommission(lead) {
 }
 
 export async function createLeadInStore(db, { name, company, email }) {
-  const ambassadorId = localStorage.getItem('ambassadorRef');
+  const ambassadorRef = String(localStorage.getItem('ambassadorRef') || '').trim();
+  let ambassadorId = ambassadorRef || null;
+
+  if (ambassadorRef && /^amb[0-9a-z]+$/i.test(ambassadorRef)) {
+    const ambassadorByReferralQuery = query(collection(db, 'ambassadors'), where('referralCode', '==', ambassadorRef.toLowerCase()), limit(1));
+    const ambassadorByReferralSnapshot = await getDocs(ambassadorByReferralQuery);
+    if (!ambassadorByReferralSnapshot.empty) {
+      ambassadorId = ambassadorByReferralSnapshot.docs[0].id;
+    }
+  }
+
   const normalizedCompany = String(company || '').trim().toLowerCase();
 
   if (normalizedCompany) {

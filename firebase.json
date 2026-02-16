@@ -3,7 +3,7 @@
     "public": "walkthrough",
     "rewrites": [
       {
-        "source": "/a/**",
+        "source": "/animer/12/amb**",
         "destination": "/referral.html"
       },
       {

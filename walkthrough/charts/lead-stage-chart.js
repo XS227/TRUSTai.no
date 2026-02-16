@@ -1,4 +1,3 @@
-import { leadStageDistribution } from '../data-store.js';
 import { getChartTheme } from './theme.js';
 
 function renderFallback(canvas, reason) {
@@ -7,7 +6,7 @@ function renderFallback(canvas, reason) {
   wrap.innerHTML = `<div class="chart-fallback">${reason}</div>`;
 }
 
-export function initLeadStageChart() {
+export function initLeadStageChart(leadStageDistribution = []) {
   const canvas = document.querySelector('#leadStageChart');
   if (!canvas) return;
   if (!window.Chart) return renderFallback(canvas, 'Chart.js utilgjengelig');
