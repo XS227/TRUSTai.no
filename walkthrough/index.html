@@ -45,15 +45,15 @@
                 <button id="openDemoAdminModal" class="btn-secondary">Se demo</button>
               </div>
             </div>
-            <article class="kpi-card">
+            <article class="kpi-card premium-card">
               <h3>Bli ambassadør</h3>
               <p class="muted">Velg innlogging og kom rett inn i din ambassadørside med ekte data.</p>
               <div class="form-grid">
                 <button id="loginGoogle" class="btn-primary">Fortsett med Google</button>
-                <form id="registerForm" class="form-grid">
-                  <label>Fullt navn<input name="fullName" required /></label>
-                  <label>E-post<input name="email" type="email" required /></label>
-                  <label>Telefon<input name="phone" /></label>
+                <form id="registerForm" class="form-grid premium-form">
+                  <label>Fullt navn<input name="fullName" placeholder="Eks. Nora Hansen" required /></label>
+                  <label>E-post<input name="email" type="email" placeholder="deg@firma.no" required /></label>
+                  <label>Telefon<input name="phone" placeholder="+47 ..." /></label>
                   <button class="btn-secondary" type="submit">Bli ambassadør med e-post</button>
                 </form>
                 <p id="authMessage" class="muted" aria-live="polite"></p>

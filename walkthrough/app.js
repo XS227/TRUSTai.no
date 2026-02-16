@@ -530,6 +530,18 @@ async function createLead({ name, company, email }) {
   return localLead;
 }
 
+function autoRedirectAfterSubmit({ messageNode, target, delayMs = 1400, message }) {
+  if (messageNode) {
+    messageNode.textContent = message;
+    messageNode.classList.add('form-success');
+  }
+
+  window.setTimeout(() => {
+    window.location.assign(target);
+  }, delayMs);
+}
+
+
 function initLandingPage() {
   const leadForm = document.querySelector('#leadForm');
   const leadMessage = document.querySelector('#leadMessage');
@@ -564,6 +576,14 @@ function initLandingPage() {
           : `Lead lagret: ${lead.company}`;
       }
       leadForm.reset();
+
+      if (!lead.duplicate) {
+        autoRedirectAfterSubmit({
+          messageNode: leadMessage,
+          target: authState.isAdmin ? 'admin.html' : 'ambassador.html',
+          message: `Lead lagret: ${lead.company}. Sender deg videre til dashboard...`
+        });
+      }
     } catch {
       if (leadMessage) leadMessage.textContent = 'Kunne ikke lagre lead.';
     }
@@ -592,7 +612,11 @@ function initLandingPage() {
     demoDb.userProfile.email = String(formData.get('email') || '');
     demoDb.userProfile.phone = String(formData.get('phone') || '');
     demoDb.userProfile.provider = 'E-post';
-    if (registerMessage) registerMessage.textContent = 'Konto registrert lokalt i MVP. Sender deg videre...';
+    autoRedirectAfterSubmit({
+      messageNode: registerMessage,
+      target: 'ambassador.html',
+      message: 'Konto registrert lokalt i MVP. Sender deg videre...'
+    });
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('isAdmin', 'false');
     authState.user = {
@@ -604,7 +628,6 @@ function initLandingPage() {
     hideProtectedNavigation(true, false);
     syncProfileUi();
     setLang(getCurrentLang());
-    window.location.assign('ambassador.html');
   });
 }
 

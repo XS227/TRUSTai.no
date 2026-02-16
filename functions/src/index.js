@@ -25,6 +25,18 @@ const PAYOUT_STATUS = {
   FAILED: 'FAILED',
 };
 
+const DEFAULT_ADMIN_ALERT_EMAILS = ['admin@animer.no'];
+
+function getAdminAlertRecipients() {
+  const raw = process.env.ADMIN_ALERT_EMAILS || '';
+  const parsed = raw
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  return parsed.length ? parsed : DEFAULT_ADMIN_ALERT_EMAILS;
+}
+
 exports.grantAdminToFirstUser = functionsV1.auth.user().onCreate(async (user) => {
   const uid = user?.uid;
   if (!uid) {
@@ -152,6 +164,100 @@ exports.provisionAmbassadorOnApproval = onDocumentCreated('ambassadors/{ambassad
   });
 
   logger.info('Ambassador auto-provisioned', { ambassadorId });
+});
+
+
+exports.bindLeadCommissionAndNotifyAdmin = onDocumentCreated('leads/{leadId}', async (event) => {
+  const leadId = event.params.leadId;
+  const lead = event.data?.data() || {};
+  const ambassadorId = lead.ambassadorId || null;
+
+  if (!ambassadorId) {
+    logger.info('Lead created without ambassador binding', { leadId });
+    return;
+  }
+
+  const commissionRate = Number(lead.commissionRate || 0.1);
+  const approvedAmount = Number(lead.approvedAmount || lead.offerAmount || lead.value || 0);
+  const grossCommissionNok = Math.round(approvedAmount * commissionRate);
+
+  let commissionCaseId = null;
+
+  await db.runTransaction(async (tx) => {
+    const leadRef = db.collection('leads').doc(leadId);
+    const commissionCaseRef = db.collection('commissionCases').doc();
+
+    tx.create(commissionCaseRef, {
+      leadId,
+      ambassadorId,
+      commissionRate,
+      grossCommissionNok,
+      status: COMMISSION_STATUS.DRAFT,
+      autoBound: true,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    tx.set(leadRef, {
+      commissionCaseId: commissionCaseRef.id,
+      commissionRate,
+      commissionAmount: grossCommissionNok,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    tx.set(db.collection('auditLogs').doc(), {
+      aggregateType: 'LEAD',
+      aggregateId: leadId,
+      action: 'LEAD_COMMISSION_AUTO_BOUND',
+      actorType: 'SYSTEM',
+      actorId: null,
+      metadata: {
+        commissionCaseId: commissionCaseRef.id,
+        ambassadorId,
+      },
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    commissionCaseId = commissionCaseRef.id;
+  });
+
+  const recipients = getAdminAlertRecipients();
+  const company = String(lead.company || lead.companyName || 'Ukjent selskap');
+  const contact = String(lead.name || lead.contactName || 'Ukjent kontakt');
+  const contactEmail = String(lead.email || 'ikke oppgitt');
+
+  await db.collection('mail').add({
+    to: recipients,
+    message: {
+      subject: `Ny lead registrert (${company})`,
+      text: [
+        'En ny lead er registrert i Animer.',
+        `Lead-ID: ${leadId}`,
+        `CommissionCase: ${commissionCaseId}`,
+        `Firma: ${company}`,
+        `Kontakt: ${contact}`,
+        `E-post: ${contactEmail}`,
+        `Ambassadør: ${ambassadorId}`,
+      ].join('\n'),
+      html: `
+        <h2>Ny lead registrert</h2>
+        <p><strong>Lead-ID:</strong> ${leadId}</p>
+        <p><strong>CommissionCase:</strong> ${commissionCaseId}</p>
+        <p><strong>Firma:</strong> ${company}</p>
+        <p><strong>Kontakt:</strong> ${contact}</p>
+        <p><strong>E-post:</strong> ${contactEmail}</p>
+        <p><strong>Ambassadør:</strong> ${ambassadorId}</p>
+      `,
+    },
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  logger.info('Lead auto-bound to commission and admin notification queued', {
+    leadId,
+    commissionCaseId,
+    ambassadorId,
+    recipients,
+  });
 });
 
 exports.markCommissionAsEarned = onCall(async (request) => {

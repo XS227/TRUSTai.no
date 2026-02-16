@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { addDoc, collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 export const LEAD_STATUSES = ['open', 'meeting_booked', 'offer_sent', 'approved', 'rejected'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
@@ -139,12 +139,21 @@ function getCookie(name) {
 export async function createLeadInStore(db, { name, company, email }) {
   const ambassadorRef = String(localStorage.getItem('ambassadorRef') || getCookie('ambassadorRef') || '').trim();
   let ambassadorId = ambassadorRef || null;
+  let ambassadorCommissionRate = 0.1;
 
   if (ambassadorRef && /^amb[0-9a-z]+$/i.test(ambassadorRef)) {
     const ambassadorByReferralQuery = query(collection(db, 'ambassadors'), where('referralCode', '==', ambassadorRef.toLowerCase()), limit(1));
     const ambassadorByReferralSnapshot = await getDocs(ambassadorByReferralQuery);
     if (!ambassadorByReferralSnapshot.empty) {
-      ambassadorId = ambassadorByReferralSnapshot.docs[0].id;
+      const ambassadorDoc = ambassadorByReferralSnapshot.docs[0];
+      ambassadorId = ambassadorDoc.id;
+      ambassadorCommissionRate = Number(ambassadorDoc.data()?.commissionRate || ambassadorCommissionRate);
+    }
+  } else if (ambassadorRef && ambassadorRef !== 'null') {
+    const ambassadorDoc = await getDoc(doc(db, 'ambassadors', ambassadorRef));
+    if (ambassadorDoc.exists()) {
+      ambassadorId = ambassadorDoc.id;
+      ambassadorCommissionRate = Number(ambassadorDoc.data()?.commissionRate || ambassadorCommissionRate);
     }
   }
 
@@ -180,8 +189,8 @@ export async function createLeadInStore(db, { name, company, email }) {
     approvedAmount: 0,
     value: 0,
     dealValue: 0,
-    commissionPercent: 10,
-    commissionRate: 0.1,
+    commissionPercent: Math.round(ambassadorCommissionRate * 100),
+    commissionRate: ambassadorCommissionRate,
     commissionAmount: 0,
     commission: 0,
     // NOTE: Frontend-beregning er kun MVP. Flytt provisjonsberegning/validering til Cloud Function i produksjon.
