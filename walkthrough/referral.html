@@ -8,10 +8,11 @@
   <body>
     <p>Registrerer henvisningskode…</p>
     <script>
-      const path = String(window.location.pathname || '');
+      const url = new URL(window.location.href);
+      const path = String(url.pathname || '');
       const legacyMatch = path.match(/\/a\/([^/?#]+)/i);
       const shortMatch = path.match(/\/(amb[0-9a-z]+)(?:\/|$|\?|#)/i);
-      const rawReferralCode = legacyMatch?.[1] || shortMatch?.[1] || '';
+      const rawReferralCode = url.searchParams.get('ref') || legacyMatch?.[1] || shortMatch?.[1] || '';
       const referralCode = String(rawReferralCode).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
       if (referralCode) {
@@ -19,10 +20,13 @@
         localStorage.setItem('ambassadorRef', normalizedReferralCode);
       }
 
-      const basePathMatch = path.match(/^(.*?\/animer\/\d+)(?:\/|$)/i);
-      const basePath = basePathMatch?.[1] || '';
+      const pathWithoutFile = path.replace(/\/[^/]*$/, '');
+      const basePath = path.match(/^(.*?\/walkthrough)(?:\/|$)/i)?.[1] || pathWithoutFile;
+      const target = String(url.searchParams.get('target') || `${basePath}/index.html`)
+        .replace(/^https?:\/\/[^/]+/i, '')
+        .replace(/\/\//g, '/');
 
-      window.location.replace(`${basePath}/index.html`.replace(/\/\//g, '/'));
+      window.location.replace(target);
     </script>
   </body>
 </html>
