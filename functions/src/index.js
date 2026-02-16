@@ -1,5 +1,6 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const functionsV1 = require('firebase-functions/v1');
 const { logger } = require('firebase-functions');
 const admin = require('firebase-admin');
 
@@ -23,6 +24,29 @@ const PAYOUT_STATUS = {
   PAID: 'PAID',
   FAILED: 'FAILED',
 };
+
+exports.grantAdminToFirstUser = functionsV1.auth.user().onCreate(async (user) => {
+  const uid = user?.uid;
+  if (!uid) {
+    logger.warn('Mangler uid på onUserCreated event');
+    return;
+  }
+
+  const ambassadorsSnapshot = await db.collection('ambassadors').limit(1).get();
+  if (!ambassadorsSnapshot.empty) {
+    return;
+  }
+
+  const userRecord = await admin.auth().getUser(uid);
+  const existingClaims = userRecord.customClaims || {};
+
+  await admin.auth().setCustomUserClaims(uid, {
+    ...existingClaims,
+    admin: true,
+  });
+
+  logger.info('Satte admin-claim for første bruker', { uid });
+});
 
 async function appendLedgerEntry(tx, ambassadorId, payload) {
   const walletRef = db.collection('wallets').doc(ambassadorId);
