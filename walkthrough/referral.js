@@ -19,11 +19,18 @@ function extractReferralCode(pathname) {
   return '';
 }
 
+function setReferralCookie(value, days = 90) {
+  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `ambassadorRef=${value}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
 export function captureReferral() {
-  const ambassadorId = extractReferralCode(window.location.pathname);
-  if (!ambassadorId) return;
+  const referralCode = extractReferralCode(window.location.pathname);
+  if (!referralCode) return;
 
   if (!localStorage.getItem('ambassadorRef')) {
-    localStorage.setItem('ambassadorRef', ambassadorId);
+    localStorage.setItem('ambassadorRef', referralCode);
   }
+
+  setReferralCookie(referralCode);
 }

@@ -1,132 +1,99 @@
 # Hele dataflyten i systemet (MVP)
 
-Dette dokumentet beskriver hele maskinen fra identitet til utbetaling i 6 lag, slik løsningen fungerer i dag.
+Dette dokumentet beskriver dataflyt for en **flat Firestore-MVP** med seks collections.
 
-## 1) Auth-laget (identitet)
+## 1) Auth-laget
 
-- **System:** Firebase Authentication.
-- Når en bruker registrerer seg/logger inn opprettes en Auth-bruker med unik `uid`.
-- `uid` er primærnøkkelen som kobler identitet til alle domeneobjekter.
+- Firebase Authentication håndterer identitet.
+- `uid` brukes for tilgangskontroll og kobling mot ambassadørdata.
 
-Eksempel:
+## 2) Ambassador-laget
 
-```json
-{
-  "uid": "OyU4L3..."
-}
-```
-
-## 2) Ambassador-dokument (profil + rolle)
-
-- **Firestore path:** `ambassadors/{uid}`.
-- Auth sier **hvem** brukeren er.
-- Firestore-dokumentet sier **hva** brukeren kan gjøre (rolle/status) og hvilke økonomiske regler som gjelder.
+- **Collection:** `ambassadors/{ambassadorId}`.
+- Inneholder profil, status, referral-kode og summerte økonomifelt.
 
 Eksempel:
 
 ```json
 {
   "name": "Khabat",
-  "email": "...",
-  "commissionRate": 0.1,
-  "status": "pending"
+  "email": "khabat@example.com",
+  "status": "active",
+  "referralCode": "ambhs3kthiq",
+  "defaultCommission": 15,
+  "availableForPayout": 12000
 }
 ```
 
-## 3) Referral-flyt (attribution)
+## 3) Referral og attribution
 
-- Ambassadør deler referral-lenke, typisk med kode som `AMB123`.
-- Klientkode i `referral.js` leser referral fra URL.
-- Referral lagres i `localStorage` som `ambassadorRef`.
-- Når et lead opprettes, settes `ambassadorId` på leadet.
-- **First-click attribution** brukes for å låse attribution tidlig i flyten.
+- Delbar lenke: `animer.no/a/{referralCode}`.
+- Klient finner `referralCode`, slår opp ambassadør, og lagrer `ambassadorId` i cookie.
+- Ved lead-innsending leses cookie, og `ambassadorId` settes på lead.
+- Attributionmodell i MVP: `first_click` (konfigureres i `settings/global`).
 
-Nøkkeldata:
-
-```txt
-ambassadorRef = "AMB123"
-```
-
-## 4) Lead-systemet
+## 4) Lead-systemet (kjerne)
 
 - **Collection:** `leads/{leadId}`.
-- Hvert lead kobles til én ambassadør via `ambassadorId`.
+- Leadet inneholder både pipeline-status og økonomiske felter.
+- `commissionAmount` lagres ferdig beregnet ved oppdatering.
 
 Eksempel:
 
 ```json
 {
-  "company": "Test AS",
-  "normalizedCompany": "testas",
-  "ambassadorId": "OyU4L3...",
-  "status": "new",
-  "value": 0
+  "companyName": "Test AS",
+  "contactName": "Per Hansen",
+  "ambassadorId": "amb123",
+  "status": "offer_sent",
+  "approvedAmount": 120000,
+  "commissionPercent": 15,
+  "commissionAmount": 18000
 }
 ```
 
-MVP-statusflyt (konseptuelt):
+Statusflyt:
 
 ```txt
-new -> contacted -> approved -> rejected
+open -> meeting_booked -> offer_sent -> approved/rejected
 ```
 
-Når et lead blir **approved**, går det videre til provisjonsmotoren.
+## 5) Payout-flyt
 
-## 5) Commission-motor
-
-- **Collection:** `commissions/{commissionId}`.
-- Hver provisjon peker til både `ambassadorId` og `leadId`.
+- **Collection:** `payouts/{payoutId}`.
+- Når payout markeres `paid`, trekkes beløpet fra `ambassadors.availableForPayout`.
 
 Eksempel:
 
 ```json
 {
-  "ambassadorId": "...",
-  "leadId": "...",
-  "amount": 5000,
-  "status": "available"
+  "ambassadorId": "amb123",
+  "amount": 12000,
+  "status": "paid",
+  "paidAt": "Timestamp"
 }
 ```
 
-Statusmapping mellom lead og payout-status i MVP:
+## 6) Support og innhold
 
-| Lead status        | Commission status |
-|--------------------|-------------------|
-| `approved`         | `available`       |
-| `payout_requested` | `pending`         |
-| `paid`             | `locked`          |
-
-## 6) Payout-motor
-
-- Admin markerer provisjoner som `paid`.
-- `payoutDate` settes for sporbarhet.
-- Dashboard summerer nøkkeltall:
-  - Earned
-  - Available
-  - Pending
-  - Paid
-  - Unpaid total
+- **Support:** `tickets/{ticketId}` (+ `messages` subcollection per ticket).
+- **Delingstekster:** `content/{contentId}`.
+- **Global konfig:** `settings/global`.
 
 ## End-to-end flyt
 
 ```txt
-User registers
-  -> Auth user created
-  -> ambassadors/{uid} (status=pending)
-  -> Admin sets active
-  -> Ambassador shares link
-  -> Visitor clicks referral
-  -> Lead created
-  -> Admin approves lead
-  -> Commission created
-  -> Admin marks paid
-  -> Dashboard updates
+Ambassador active
+  -> deler referral-lenke
+  -> bruker klikker lenke
+  -> ambassadorId lagres i cookie
+  -> lead opprettes i leads
+  -> admin oppdaterer status til approved
+  -> payout opprettes og markeres paid
+  -> availableForPayout oppdateres
 ```
 
-## Roller og ansvar
+## Designprinsipp
 
-| Rolle       | Ansvar |
-|-------------|--------|
-| Ambassadør  | Se egne leads og provisjoner |
-| Admin       | Endre lead-status og utbetaling |
-| System      | Kalkulere provisjon og aggregere dashboard-tall |
+- Kun 6 collections i MVP.
+- Hold alt flatt for enklere queries, færre indekser og raskere iterasjon.

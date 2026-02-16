@@ -1,50 +1,51 @@
-# MVP-lanseringsplan for Animer
+# MVP-lanseringsplan for Animer (flat modell)
 
-## Fase 0 – Fundament (uke 1)
-- Etabler Firestore-modell, security rules og indekser.
-- Deploy Cloud Functions for provisjonsflyt.
-- Opprett dev/staging/prod-prosjekter i Firebase.
+## Fase 0 – Datagrunnlag (uke 1)
+- Etabler de 6 collectionene: `ambassadors`, `leads`, `payouts`, `tickets`, `content`, `settings`.
+- Opprett `settings/global`.
+- Opprett 3 nødvendige `leads`-indekser.
 
-**Exit-kriterie:** En testambassadør kan provisjoneres automatisk og få wallet opprettet.
+**Exit-kriterie:** Data kan lagres og leses med kun disse 6 collectionene.
 
 ## Fase 1 – Kjerneflyt (uke 2)
-- Ambassadør onboarding + admin-godkjenning.
-- Referral-lenke med tracking.
-- Lead-registrering og pipeline (`NEW -> WON/LOST`).
+- Ambassadør-onboarding i `ambassadors`.
+- Referral-lenke `animer.no/a/{referralCode}`.
+- Cookie-basert attribution til lead.
+- Lead-pipeline: `open -> meeting_booked -> offer_sent -> approved/rejected`.
 
-**Exit-kriterie:** Ett lead går fra klikk til `WON` med synlig attribution.
+**Exit-kriterie:** Ett lead går fra referral-klikk til `approved` med riktig `ambassadorId`.
 
 ## Fase 2 – Økonomi (uke 3)
-- Oppretting av `commissionCases` ved `WON`.
-- Flyt `DRAFT -> EARNED -> AVAILABLE` via funksjoner.
-- Payout request/approval/paid og wallet-oppdatering.
+- Lagre `commissionAmount` ferdig beregnet på lead.
+- Oppdater aggregater på ambassadør (`totalRevenue`, `totalCommissionEarned`, `availableForPayout`).
+- Innfør payout-flyt med `pending|approved|paid|rejected`.
 
-**Exit-kriterie:** Full økonomiflyt i staging med historikk i ledger.
+**Exit-kriterie:** Et approved lead gir synlig provisjon, og `paid` payout reduserer `availableForPayout`.
 
-## Fase 3 – Kontrollert pilot (uke 4)
-- 5–10 ambassadører i pilot.
-- Ukentlig operativ gjennomgang: leads, conversion, payout-feil.
-- Etabler support-SLA og FAQ.
+## Fase 3 – Pilot (uke 4)
+- 5–10 ambassadører i test.
+- Bruk `tickets` for supportspørsmål.
+- Bruk `content` for å justere delingstekster uten deploy.
 
-**Exit-kriterie:** <5% feilrate i økonomihendelser, ingen kritiske sikkerhetshull.
+**Exit-kriterie:** Stabil daglig drift med lav manuell oppfølging.
 
 ## Fase 4 – Offisiell MVP-lansering (uke 5)
-- Aktivér produksjonsdomene + auth-domener.
-- Sett opp monitorering (Cloud Logging alerts + feilrate).
-- Publiser enkel partnerguide og onboardingvideo.
+- Produksjonsdomene + auth-domener.
+- Overvåkning og alerts.
+- Enkel partnerguide.
 
-**Exit-kriterie:** Plattformen håndterer første 100 ambassadører uten manuell datareparasjon.
+**Exit-kriterie:** Plattformen håndterer første 100 ambassadører med flat datamodell.
 
 ---
 
-## KPI-er for MVP
+## KPI-er
 - Aktive ambassadører per uke.
 - Leads per ambassadør.
-- Win-rate per lead.
-- Tid fra `WON` til `AVAILABLE` provisjon.
-- Tid fra payout request til `PAID`.
+- Andel leads i `approved`.
+- Tid fra `offer_sent` til `approved`.
+- Tid fra payout `pending` til `paid`.
 
 ## Risiko og tiltak
-- **Feil attribution:** lås first-click regel server-side + audit-log.
-- **Dobbeltutbetaling:** bruk idempotensnøkler i payout-funksjon.
-- **Ustabil datakvalitet:** daglig rekonsiliering mot ledger.
+- **Feil attribution:** bruk cookie + `first_click` fra `settings`.
+- **Feil provisjon:** lagre `commissionAmount` på lead ved oppdatering.
+- **Dobbeltutbetaling:** bruk transaksjon når payout settes til `paid`.

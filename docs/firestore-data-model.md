@@ -1,206 +1,232 @@
-# Firestore-datamodell for Animer (ren arkitektur)
+# Firestore-datamodell (MVP – flat struktur)
 
-Dette dokumentet beskriver en produksjonsklar Firestore-struktur med tydelig separasjon mellom:
-- **Domene (kjerneobjekter og regler)**
-- **Applikasjon (use-cases / workflows)**
-- **Infrastruktur (Firestore, Cloud Functions, indekser)**
+Denne modellen er optimalisert for MVP: **få collections, få indekser, enkel drift**.
 
-Målet er en modell som er enkel å utvikle videre fra MVP til skalerbar drift.
+## Tillatte collections (kun disse 6)
 
----
+1. `ambassadors`
+2. `leads`
+3. `payouts`
+4. `tickets`
+5. `content`
+6. `settings`
 
-## 1) Domenegrenser (bounded contexts)
-
-### Identity & Access
-- Brukere, roller, godkjenning, claims.
-
-### Ambassador Program
-- Ambassadører, profil, status, referral-koder.
-
-### Lead & Attribution
-- Klikk, leads, pipeline-steg, regler for attribution-vindu.
-
-### Commission & Payout
-- Provisjonsgrunnlag, tilgjengelig saldo, reservering, utbetaling, justeringer.
-
-### Support & Audit
-- Ticketing, kommentarflyt, hendelseslogg.
+> Ikke lag `wallets`, `commissionCases`, `referrals`, `auditLogs` eller andre ekstra collections i MVP.
 
 ---
 
-## 2) Firestore collections (kanonisk struktur)
+## 1) `ambassadors/{ambassadorId}`
 
-## `users/{userId}`
+Dokument-ID kan være auto-ID eller custom referral-ID.
+
 ```json
 {
-  "email": "string",
-  "phone": "string|null",
-  "fullName": "string",
-  "locale": "nb-NO",
-  "roles": ["AMBASSADOR"],
+  "name": "Ola Nordmann",
+  "email": "ola@email.no",
+  "type": "private",
+  "orgNumber": null,
+  "status": "active",
+  "referralCode": "ambhs3kthiq",
+  "defaultCommission": 15,
+  "totalLeads": 12,
+  "totalRevenue": 240000,
+  "totalCommissionEarned": 36000,
+  "availableForPayout": 12000,
+  "createdAt": "Timestamp",
+  "invitedBy": null
+}
+```
+
+Verdier:
+- `type`: `private | business`
+- `status`: `pending | active | paused | closed`
+
+Referral-lenke bygges direkte fra `referralCode`:
+
+```txt
+animer.no/a/{referralCode}
+```
+
+---
+
+## 2) `leads/{leadId}` (kjerne-collection)
+
+```json
+{
+  "companyName": "Veidekke",
+  "contactName": "Per Hansen",
+  "email": "per@veidekke.no",
+  "phone": "12345678",
+  "ambassadorId": "docId_of_ambassador",
+  "referralCode": "ambhs3kthiq",
+  "source": "email",
+  "landingPage": "training",
+  "status": "offer_sent",
+  "offerAmount": 120000,
+  "approvedAmount": 120000,
+  "commissionPercent": 15,
+  "commissionAmount": 18000,
   "createdAt": "Timestamp",
   "updatedAt": "Timestamp"
 }
 ```
 
-## `ambassadors/{ambassadorId}`
-```json
-{
-  "userId": "string",
-  "status": "APPLIED|APPROVED|PAUSED|TERMINATED",
-  "type": "PRIVATE|BUSINESS",
-  "defaultCommissionPct": 12.5,
-  "referralCode": "string",
-  "attributionWindowDays": 90,
-  "approvedBy": "userId|null",
-  "approvedAt": "Timestamp|null",
-  "createdAt": "Timestamp",
-  "updatedAt": "Timestamp"
-}
-```
+Verdier:
+- `source`: `email | sms | direct | linkedin`
+- `status`: `open | meeting_booked | offer_sent | approved | rejected`
 
-## `ambassadors/{ambassadorId}/profile/main`
-```json
-{
-  "address": "string",
-  "postalCode": "string",
-  "city": "string",
-  "country": "NO",
-  "organizationName": "string|null",
-  "organizationNumber": "string|null",
-  "billingEmail": "string|null"
-}
-```
+Viktig:
+- `commissionAmount` skal lagres ferdig beregnet ved skriv/oppdatering.
+- Frontend skal ikke regne provisjon hver gang data vises.
 
-## `referrals/{referralId}`
-```json
-{
-  "ambassadorId": "string",
-  "shareChannel": "SMS|EMAIL|LINK|SOCIAL",
-  "landingPath": "/kampanje-x",
-  "clickedAt": "Timestamp",
-  "leadId": "string|null",
-  "sourceFingerprint": "string"
-}
-```
+---
 
-## `leads/{leadId}`
-```json
-{
-  "ambassadorId": "string",
-  "referralId": "string|null",
-  "customer": {
-    "name": "string",
-    "email": "string|null",
-    "phone": "string|null",
-    "company": "string|null"
-  },
-  "status": "NEW|CONTACTED|MEETING|OFFER_SENT|WON|LOST",
-  "offerValueNok": 0,
-  "wonAt": "Timestamp|null",
-  "createdAt": "Timestamp",
-  "updatedAt": "Timestamp"
-}
-```
+## 3) `payouts/{payoutId}`
 
-## `commissionCases/{caseId}`
 ```json
 {
-  "leadId": "string",
-  "ambassadorId": "string",
-  "basisAmountNok": 50000,
-  "commissionPct": 12.5,
-  "grossCommissionNok": 6250,
-  "status": "DRAFT|EARNED|AVAILABLE|PAID|CANCELLED",
-  "earnedAt": "Timestamp|null",
-  "availableAt": "Timestamp|null",
-  "paidAt": "Timestamp|null",
-  "payoutId": "string|null",
-  "createdAt": "Timestamp",
-  "updatedAt": "Timestamp"
-}
-```
-
-## `wallets/{ambassadorId}`
-```json
-{
-  "currency": "NOK",
-  "availableNok": 0,
-  "pendingNok": 0,
-  "paidLifetimeNok": 0,
-  "updatedAt": "Timestamp"
-}
-```
-
-## `wallets/{ambassadorId}/ledger/{entryId}`
-```json
-{
-  "entryType": "EARNED|RELEASED|PAYOUT|ADJUSTMENT",
-  "amountNok": 1200,
-  "direction": "CREDIT|DEBIT",
-  "sourceType": "COMMISSION_CASE|PAYOUT|MANUAL",
-  "sourceId": "string",
-  "balanceAfter": {
-    "availableNok": 3000,
-    "pendingNok": 900
-  },
-  "note": "string",
-  "createdBy": "system|userId",
+  "ambassadorId": "docId",
+  "amount": 12000,
+  "invoiceUrl": "storage-link",
+  "status": "pending",
+  "paidAt": null,
   "createdAt": "Timestamp"
 }
 ```
 
-## `payouts/{payoutId}`
+Verdier:
+- `status`: `pending | approved | paid | rejected`
+
+Regel:
+- Når payout settes til `paid`, trekk beløpet fra `ambassadors.availableForPayout`.
+
+---
+
+## 4) `tickets/{ticketId}`
+
 ```json
 {
-  "ambassadorId": "string",
-  "amountNok": 3000,
-  "status": "REQUESTED|APPROVED|PROCESSING|PAID|FAILED",
-  "requestedAt": "Timestamp",
-  "approvedAt": "Timestamp|null",
-  "paidAt": "Timestamp|null",
-  "failureReason": "string|null",
-  "bankReference": "string|null"
+  "ambassadorId": "docId",
+  "subject": "Utbetaling",
+  "message": "Når blir den utbetalt?",
+  "status": "open",
+  "createdAt": "Timestamp",
+  "updatedAt": "Timestamp"
 }
 ```
 
-## `auditLogs/{eventId}`
+Verdier:
+- `status`: `open | closed`
+
+Svar kan lagres som subcollection (tillatt):
+
+```txt
+tickets/{ticketId}/messages/{messageId}
+```
+
+---
+
+## 5) `content/{contentId}`
+
 ```json
 {
-  "aggregateType": "AMBASSADOR|LEAD|COMMISSION|PAYOUT",
-  "aggregateId": "string",
-  "action": "string",
-  "actorType": "SYSTEM|USER",
-  "actorId": "string|null",
-  "metadata": {},
+  "type": "lead_share",
+  "title": "Bruk animasjon til opplæring",
+  "text": "Hei {{name}}...",
+  "clicks": 34,
+  "conversions": 11,
+  "active": true,
   "createdAt": "Timestamp"
 }
 ```
 
----
+Verdier:
+- `type`: `lead_share | invite`
 
-## 3) Regler for ren arkitektur (praktisk)
-
-1. **All forretningslogikk i Cloud Functions / backend-lag**, aldri direkte i klient ved skriving av økonomidata.
-2. **Ledger er append-only** (ingen oppdatering/sletting av historikk).
-3. **Wallet totals er read-model** (kan rekalkuleres fra ledger ved behov).
-4. **Idempotensnøkler** for funksjoner som kan trigges flere ganger.
-5. **Statusmaskiner** må valideres server-side (f.eks. `EARNED -> AVAILABLE -> PAID`).
+Formål:
+- Endre delingstekster uten ny deploy.
 
 ---
 
-## 4) Nødvendige indekser (MVP)
+## 6) `settings/global`
 
-- `commissionCases`: `ambassadorId + status + availableAt desc`
-- `leads`: `ambassadorId + status + updatedAt desc`
-- `payouts`: `ambassadorId + status + requestedAt desc`
-- `referrals`: `ambassadorId + clickedAt desc`
+Kun ett dokument i `settings`:
+
+```json
+{
+  "defaultCommissionPercent": 15,
+  "cookieDurationDays": 90,
+  "attributionModel": "first_click"
+}
+```
 
 ---
 
-## 5) Multi-tenant / miljø
+## Viktigste queries
 
-Hvis flere merkevarer skal støttes senere:
-- legg inn `tenantId` i alle toppnivådokumenter,
-- bruk security rules på `tenantId`-match,
-- og inkluder `tenantId` i alle komposittindekser.
+Ambassadør-dashboard:
+
+```js
+leads
+  .where("ambassadorId", "==", userId)
+  .orderBy("createdAt", "desc")
+```
+
+Approved leads:
+
+```js
+leads
+  .where("ambassadorId", "==", userId)
+  .where("status", "==", "approved")
+  .orderBy("createdAt", "desc")
+```
+
+Super admin pipeline:
+
+```js
+leads
+  .where("status", "==", "offer_sent")
+  .orderBy("createdAt", "desc")
+```
+
+---
+
+## Indekser (MVP)
+
+Lag kun disse komposittindeksene i `leads`:
+
+1. `ambassadorId + createdAt desc`
+2. `ambassadorId + status + createdAt desc`
+3. `status + createdAt desc`
+
+---
+
+## Arkitekturvalg
+
+- Hold data **flat**.
+- Ikke lag leads som subcollection under `ambassadors`.
+- Ikke bygg nested økonomistruktur i MVP.
+
+Flat struktur gir:
+- færre indekser,
+- raskere queries,
+- enklere utvikling og vedlikehold.
+
+---
+
+## Referral-tracking (MVP)
+
+Ved klikk på:
+
+```txt
+animer.no/a/{referralCode}
+```
+
+Flyt:
+1. Finn ambassadør via `referralCode`.
+2. Sett cookie med `ambassadorId`.
+3. Når lead opprettes: les cookie og skriv `ambassadorId` på lead.
+
+MVP-krav:
+- Ikke nødvendig å lagre klikk-events i Firestore.
+- Leads er primærmåling for attribution.
