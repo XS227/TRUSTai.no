@@ -92,6 +92,40 @@ body {
   display: grid;
   gap: 12px;
 }
+.hero-panel {
+  gap: 10px;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--primary-strong);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.cta-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.faq-list {
+  display: grid;
+  gap: 8px;
+}
+.faq-list details {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+}
+.faq-list summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.faq-list p {
+  margin: 8px 0 0;
+}
 .section-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 h1 { margin: 0; font-size: 1.45rem; }
