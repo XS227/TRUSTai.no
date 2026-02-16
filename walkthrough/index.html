@@ -62,6 +62,34 @@
             </article>
           </section>
 
+          <section id="be-om-pris" style="padding:60px 20px; max-width:700px; margin:auto;">
+            <h2>Be om pris på animasjonsfilm</h2>
+            <p>Fortell oss litt om prosjektet ditt, så sender vi deg et uforpliktende tilbud.</p>
+
+            <form id="priceForm" style="display:flex; flex-direction:column; gap:15px;">
+              <input type="text" id="companyName" placeholder="Firmanavn" required />
+              <input type="text" id="contactName" placeholder="Kontaktperson" required />
+              <input type="email" id="email" placeholder="E-post" required />
+              <input type="tel" id="phone" placeholder="Telefon" />
+
+              <select id="filmType">
+                <option value="">Hva skal filmen brukes til?</option>
+                <option value="reklame">Reklame</option>
+                <option value="opplæring">Opplæring</option>
+                <option value="forklaringsfilm">Forklaringsfilm</option>
+                <option value="annet">Annet</option>
+              </select>
+
+              <textarea id="description" placeholder="Beskriv prosjektet kort..." rows="4"></textarea>
+
+              <button type="submit" style="padding:12px; background:black; color:white; border:none; cursor:pointer;">
+                Send forespørsel
+              </button>
+
+              <p id="formMessage" style="margin-top:10px;"></p>
+            </form>
+          </section>
+
           <section class="panel">
             <h2>Hvordan kan man tjene penger med systemet?</h2>
             <p>
