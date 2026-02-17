@@ -370,3 +370,56 @@ body[data-theme='dark'] .premium-form {
 .contact-submit {
   margin-top: 8px;
 }
+
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.pipeline-card {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 10px;
+  background: var(--surface-soft);
+}
+
+.pipeline-card strong {
+  font-size: 1.25rem;
+}
+
+.admin-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.simple-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(250px, 1fr);
+  gap: 12px;
+}
+
+.lead-detail {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--surface-soft);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+@media (max-width: 900px) {
+  .admin-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}

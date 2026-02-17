@@ -23,7 +23,7 @@
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle btn-secondary" aria-expanded="false">☰</button>
-            <h1>Superadmin panel</h1>
+            <h1>Super Admin MVP</h1>
           </div>
           <div class="topbar-actions">
             <button id="themeToggle" class="btn-icon btn-secondary" title="Toggle dark/light">🌙</button>
@@ -35,58 +35,70 @@
 
         <main class="page">
           <section class="panel">
-            <h2>Superadmin control center</h2>
-            <p class="muted">Manage leads, ambassador status, and payouts with the same clean layout used across the rest of the platform.</p>
-          </section>
-          <section class="panel">
-            <div class="section-header">
-              <h2>Leads overview</h2>
-              <div class="filters">
-                <select id="leadStatusFilter"><option value="all">Status</option></select>
-                <select id="leadAmbassadorFilter"><option value="all">Ambassador</option></select>
-              </div>
+            <h2>Dashboard</h2>
+            <div class="grid">
+              <article class="kpi-card"><p class="muted">Totale leads</p><p class="kpi" id="kpiTotalLeads">0</p></article>
+              <article class="kpi-card"><p class="muted">Møte booket</p><p class="kpi" id="kpiMeeting">0</p></article>
+              <article class="kpi-card"><p class="muted">Godkjent omsetning</p><p class="kpi" id="kpiRevenue">kr 0</p></article>
+              <article class="kpi-card"><p class="muted">Utestående provisjon</p><p class="kpi" id="kpiOutstanding">kr 0</p></article>
             </div>
-            <div id="leadEmptyState" class="empty-state" hidden>No leads match the filter.</div>
-            <div class="table-wrap">
-              <table class="table">
-                <thead><tr><th>Company</th><th>Contact</th><th>Ambassador</th><th>Lead status</th><th>Payout status</th><th>Value</th><th>Commission</th><th>Action</th></tr></thead>
-                <tbody id="adminLeadBody"></tbody>
-              </table>
+            <div class="pipeline-grid" id="pipelineCards"></div>
+            <div class="admin-lists">
+              <section>
+                <h3>Siste 10 leads</h3>
+                <ul id="recentLeadsList" class="simple-list"></ul>
+              </section>
+              <section>
+                <h3>Nye ambassadør-søknader</h3>
+                <ul id="ambassadorApplicationsList" class="simple-list"></ul>
+              </section>
             </div>
           </section>
 
           <section class="panel">
-            <h2>Ambassadors & commission</h2>
+            <div class="section-header">
+              <h2>Leads</h2>
+              <div class="filters">
+                <select id="leadStatusFilter"><option value="all">Status</option></select>
+                <select id="leadAmbassadorFilter"><option value="all">Ambassadør</option></select>
+              </div>
+            </div>
+            <div id="leadEmptyState" class="empty-state" hidden>Ingen leads matcher filteret.</div>
+            <div class="admin-detail-layout">
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th>Lead</th><th>Firma</th><th>Ambassadør</th><th>Status</th><th>Verdi</th><th>Provisjon</th><th>Handling</th></tr></thead>
+                  <tbody id="adminLeadBody"></tbody>
+                </table>
+              </div>
+              <aside class="lead-detail" id="leadDetailPanel">
+                <h3>Lead-detalj</h3>
+                <p class="muted">Klikk på et lead for å se detaljer.</p>
+              </aside>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Ambassadører</h2>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Name</th><th>Status</th><th>Leads</th><th>Revenue</th><th>Rate</th><th>Earned</th><th>Unpaid commission</th><th>Action</th></tr></thead>
+                <thead><tr><th>Navn</th><th>Status</th><th>Leads</th><th>Omsetning</th><th>Provisjon</th><th>Handling</th></tr></thead>
                 <tbody id="adminAmbassadorBody"></tbody>
               </table>
             </div>
           </section>
 
           <section class="panel">
-            <h2>Payouts</h2>
+            <h2>Utbetalinger</h2>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Ambassador</th><th>Earned</th><th>Available for payout</th><th>Pending</th><th>Paid</th><th>Unpaid commission</th><th>Last payout</th><th>Operation</th></tr></thead>
+                <thead><tr><th>Ambassadør</th><th>Tilgjengelig</th><th>Faktura</th><th>Status</th><th>Handling</th></tr></thead>
                 <tbody id="adminPayoutBody"></tbody>
               </table>
             </div>
           </section>
         </main>
         <footer class="site-footer">© Delivered by Setai.no</footer>
-      </div>
-    </div>
-
-    <div id="statusModalBackdrop" class="modal-backdrop">
-      <div class="modal">
-        <h2>Update lead status</h2>
-        <label>New status<select id="statusModalSelect"></select></label>
-        <div class="row-actions">
-          <button id="closeStatusModal" class="btn-secondary">Cancel</button>
-          <button id="saveStatusModal" class="btn-primary">Save</button>
-        </div>
       </div>
     </div>
 

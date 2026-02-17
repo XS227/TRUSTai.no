@@ -93,7 +93,24 @@ const TRANSLATIONS = {
   }
 };
 
-const adminState = { leadStatusFilter: 'all', ambassadorFilter: 'all', pendingStatusLeadId: null };
+const adminState = {
+  leadStatusFilter: 'all',
+  ambassadorFilter: 'all',
+  selectedLeadId: null,
+  selectedAmbassadorId: null
+};
+const ADMIN_LEAD_STATUS_LABELS = {
+  open: 'Åpent',
+  meeting_booked: 'Møte',
+  offer_sent: 'Tilbud sendt',
+  approved: 'Godkjent',
+  rejected: 'Avslag'
+};
+const ADMIN_AMBASSADOR_STATUS_LABELS = {
+  Pending: 'Søknad',
+  Active: 'Aktiv',
+  Paused: 'Pauset'
+};
 const ambassadorState = { leadFilter: 'all', selectedSharePlatform: null };
 const PROTECTED_PAGES = ['/ambassador.html', '/admin.html', '/profile.html', '/payout-support.html'];
 const ADMIN_PAGE = '/admin.html';
@@ -644,11 +661,116 @@ function initLandingPage() {
 
 function getFilteredLeads() {
   return demoDb.leads.filter((lead) => {
-    const statusOk = adminState.leadStatusFilter === 'all' || lead.status === adminState.leadStatusFilter;
+    const statusOk = adminState.leadStatusFilter === 'all' || normalizeLeadStatus(lead.status) === adminState.leadStatusFilter;
     const ambassador = lead.ambassadorId || 'Unassigned';
     const ambassadorOk = adminState.ambassadorFilter === 'all' || ambassador === adminState.ambassadorFilter;
     return statusOk && ambassadorOk;
   });
+}
+
+function getAdminStatusLabel(status) {
+  return ADMIN_LEAD_STATUS_LABELS[normalizeLeadStatus(status)] || status;
+}
+
+function getAdminAmbassadorStatusLabel(status) {
+  return ADMIN_AMBASSADOR_STATUS_LABELS[status] || status;
+}
+
+function ensureLeadMeta(lead) {
+  if (!Array.isArray(lead.comments)) lead.comments = [];
+  if (!lead.offerValue) lead.offerValue = Number(lead.offerAmount || lead.dealValue || 0);
+}
+
+function renderDashboardCards() {
+  const totals = demoDb.leads.reduce((acc, lead) => {
+    const status = normalizeLeadStatus(lead.status);
+    const value = Number(lead.dealValue || lead.offerValue || 0);
+    const commission = Number(lead.commissionAmount || 0);
+    acc.total += 1;
+    if (status === 'meeting_booked') acc.meetings += 1;
+    if (status === 'approved') {
+      acc.revenue += value;
+      const payout = String(lead.payoutStatus || 'available').toLowerCase();
+      if (payout !== 'paid') acc.outstanding += commission;
+    }
+    return acc;
+  }, { total: 0, meetings: 0, revenue: 0, outstanding: 0 });
+
+  document.querySelector('#kpiTotalLeads')?.replaceChildren(document.createTextNode(String(totals.total)));
+  document.querySelector('#kpiMeeting')?.replaceChildren(document.createTextNode(String(totals.meetings)));
+  document.querySelector('#kpiRevenue')?.replaceChildren(document.createTextNode(currency(totals.revenue)));
+  document.querySelector('#kpiOutstanding')?.replaceChildren(document.createTextNode(currency(totals.outstanding)));
+
+  const buckets = ['open', 'meeting_booked', 'offer_sent', 'approved', 'rejected'].map((status) => {
+    const leads = demoDb.leads.filter((lead) => normalizeLeadStatus(lead.status) === status);
+    return {
+      status,
+      count: leads.length,
+      value: leads.reduce((sum, lead) => sum + Number(lead.dealValue || lead.offerValue || 0), 0)
+    };
+  });
+
+  const pipelineCards = document.querySelector('#pipelineCards');
+  if (pipelineCards) {
+    pipelineCards.innerHTML = buckets.map((bucket) => `
+      <button class="pipeline-card" data-status="${bucket.status}">
+        <span class="muted">${getAdminStatusLabel(bucket.status)}</span>
+        <strong>${bucket.count}</strong>
+        <span>${currency(bucket.value)}</span>
+      </button>
+    `).join('');
+  }
+
+  const recentLeadsNode = document.querySelector('#recentLeadsList');
+  if (recentLeadsNode) {
+    recentLeadsNode.innerHTML = demoDb.leads
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 10)
+      .map((lead) => `<li><strong>${lead.company}</strong> · ${getAdminStatusLabel(lead.status)}</li>`)
+      .join('') || '<li class="muted">Ingen leads ennå.</li>';
+  }
+
+  const applicationsNode = document.querySelector('#ambassadorApplicationsList');
+  if (applicationsNode) {
+    applicationsNode.innerHTML = demoDb.ambassadors
+      .filter((ambassador) => ambassador.status === 'Pending')
+      .map((ambassador) => `<li><strong>${ambassador.name}</strong> · ${ambassador.email}</li>`)
+      .join('') || '<li class="muted">Ingen nye søknader.</li>';
+  }
+}
+
+function renderLeadDetailPanel() {
+  const panel = document.querySelector('#leadDetailPanel');
+  if (!panel) return;
+  const lead = demoDb.leads.find((item) => item.id === adminState.selectedLeadId);
+  if (!lead) {
+    panel.innerHTML = '<h3>Lead-detalj</h3><p class="muted">Klikk på et lead for å se detaljer.</p>';
+    return;
+  }
+  ensureLeadMeta(lead);
+  const ambassador = demoDb.ambassadors.find((item) => item.id === lead.ambassadorId);
+  panel.innerHTML = `
+    <h3>${lead.company}</h3>
+    <p class="muted">Kontakt: ${lead.name || '—'}</p>
+    <p class="muted">Ambassadør: ${ambassador?.name || lead.ambassadorId || 'Uten ambassadør'}</p>
+    <p class="muted">Status: ${getAdminStatusLabel(lead.status)}</p>
+    <label>Tilbudssum
+      <input type="number" min="0" id="leadDetailOffer" value="${Number(lead.offerValue || lead.dealValue || 0)}" />
+    </label>
+    <label>Provisjon %
+      <input type="number" min="1" max="100" id="leadDetailCommission" value="${Math.round(Number(lead.commissionRate || DEFAULT_COMMISSION_RATE) * 100)}" />
+    </label>
+    <button class="btn-secondary" id="saveLeadDetail">Lagre detaljer</button>
+    <label>Kommentar
+      <textarea id="leadDetailComment" rows="3" placeholder="Skriv en kommentar"></textarea>
+    </label>
+    <button class="btn-secondary" id="addLeadComment">Legg til kommentar</button>
+    <div>
+      <h4>Kommentar-logg</h4>
+      <ul class="simple-list">${lead.comments.map((comment) => `<li>${formatDate(comment.createdAt)} · ${comment.text}</li>`).join('') || '<li class="muted">Ingen kommentarer.</li>'}</ul>
+    </div>
+  `;
 }
 
 function renderAdmin() {
@@ -658,19 +780,27 @@ function renderAdmin() {
   const leadEmptyState = document.querySelector('#leadEmptyState');
   if (!leadBody || !ambassadorBody || !payoutBody) return;
 
+  renderDashboardCards();
+
   const filteredLeads = getFilteredLeads();
   leadBody.innerHTML = filteredLeads.map((lead) => {
-    const payoutBucket = getLeadPayoutBucket(lead);
+    ensureLeadMeta(lead);
+    const status = normalizeLeadStatus(lead.status);
+    const showOfferInput = status === 'offer_sent';
+    const showValue = status === 'approved';
     return `
     <tr>
+      <td>${lead.name || '—'}</td>
       <td>${lead.company}</td>
-      <td>${lead.name}</td>
       <td>${lead.ambassadorId || 'Unassigned'}</td>
-      <td><span class="badge info">${lead.status}</span></td>
-      <td>${payoutBadgeLabel(payoutBucket)}</td>
-      <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${['approved', 'payout_requested', 'paid'].includes(normalizeLeadStatus(lead.status)) ? '' : 'disabled'} /></td>
+      <td>
+        <select class="lead-status-select" data-id="${lead.id}">
+          ${LEAD_STATUSES.map((statusItem) => `<option value="${statusItem}" ${statusItem === status ? 'selected' : ''}>${getAdminStatusLabel(statusItem)}</option>`).join('')}
+        </select>
+      </td>
+      <td>${showOfferInput ? `<input type="number" class="offer-input" data-id="${lead.id}" min="0" value="${Number(lead.offerValue || 0)}" />` : showValue ? currency(lead.dealValue || 0) : '—'}</td>
       <td>${currency(lead.commissionAmount || 0)}</td>
-      <td><button class="btn-secondary open-status-modal" data-id="${lead.id}">Endre</button></td>
+      <td><button class="btn-secondary open-lead-detail" data-id="${lead.id}">Åpne</button></td>
     </tr>`;
   }).join('');
 
@@ -682,42 +812,34 @@ function renderAdmin() {
     return `
       <tr>
         <td>${ambassador.name}<br/><span class="muted">${ambassador.email}</span></td>
-        <td><span class="badge ${statusBadge}">${ambassador.status}</span></td>
+        <td><span class="badge ${statusBadge}">${getAdminAmbassadorStatusLabel(ambassador.status)}</span></td>
         <td>${totals.leads}</td>
         <td>${currency(totals.revenue)}</td>
-        <td><input class="commission-input" data-id="${ambassador.id}" type="number" min="1" max="100" value="${Math.round(ambassador.commissionRate * 100)}" />%</td>
-        <td>${currency(totals.earned)}</td>
-        <td>${currency(totals.unpaid)}</td>
         <td>
           <select class="ambassador-status" data-id="${ambassador.id}">
             ${AMBASSADOR_STATUSES.map((status) => `<option value="${status}" ${status === ambassador.status ? 'selected' : ''}>${status}</option>`).join('')}
           </select>
-          <span class="badge ${statusBadge}">${ambassador.status}</span>
+          <button class="btn-secondary open-ambassador-detail" data-id="${ambassador.id}">Detaljer</button>
         </td>
       </tr>`;
   }).join('');
 
   payoutBody.innerHTML = demoDb.ambassadors.map((ambassador) => {
     const totals = calculateAmbassadorTotals(ambassador.id);
-    const nextPayDate = new Date().toISOString().slice(0, 10);
-    const latestPayout = demoDb.payouts
-      .filter((payout) => payout.ambassadorId === ambassador.id)
-      .sort((a, b) => new Date(b.paidAt || 0) - new Date(a.paidAt || 0))[0];
+    const pendingPayout = demoDb.payouts.find((item) => item.ambassadorId === ambassador.id && item.status !== 'paid');
     return `<tr>
       <td>${ambassador.name}</td>
-      <td>${currency(totals.earned)}</td>
       <td>${currency(totals.available)}</td>
-      <td>${currency(totals.pending)}</td>
-      <td>${currency(totals.paid)}</td>
-      <td>${currency(totals.unpaid)}</td>
-      <td>${latestPayout?.paidAt ? formatDate(latestPayout.paidAt) : '—'}</td>
+      <td><input class="invoice-input" data-id="${ambassador.id}" placeholder="Lenke til faktura" value="${pendingPayout?.invoiceUrl || ''}" /></td>
+      <td>${pendingPayout?.status || 'Ingen'}</td>
       <td>
-        <input class="payout-date-input" type="date" data-id="${ambassador.id}" value="${nextPayDate}" />
-        <button class="btn-secondary mark-paid" data-id="${ambassador.id}">Marker paid</button>
+        <button class="btn-secondary approve-payout" data-id="${ambassador.id}">Godkjenn</button>
+        <button class="btn-secondary mark-paid" data-id="${ambassador.id}">Marker utbetalt</button>
       </td>
     </tr>`;
   }).join('');
 
+  renderLeadDetailPanel();
   renderFlowPage();
 }
 
@@ -730,33 +852,14 @@ function recalculateLeadCommission(lead) {
   Object.assign(lead, recalculated);
 }
 
-function openStatusModal(leadId) {
-  const backdrop = document.querySelector('#statusModalBackdrop');
-  const select = document.querySelector('#statusModalSelect');
-  const message = document.querySelector('#statusModalMessage');
-  const lead = demoDb.leads.find((item) => item.id === leadId);
-  if (!backdrop || !select || !lead) return;
-
-  adminState.pendingStatusLeadId = leadId;
-  select.innerHTML = LEAD_STATUSES.map((status) => `<option value="${status}" ${status === lead.status ? 'selected' : ''}>${status}</option>`).join('');
-  if (message) message.textContent = `Endre status for ${lead.company}.`;
-  backdrop.classList.add('open');
-}
-
-function closeStatusModal() {
-  const backdrop = document.querySelector('#statusModalBackdrop');
-  adminState.pendingStatusLeadId = null;
-  backdrop?.classList.remove('open');
-}
-
 function initAdminPage() {
   const leadBody = document.querySelector('#adminLeadBody');
   const ambassadorBody = document.querySelector('#adminAmbassadorBody');
   const payoutBody = document.querySelector('#adminPayoutBody');
+  const pipelineCards = document.querySelector('#pipelineCards');
+  const detailPanel = document.querySelector('#leadDetailPanel');
   const leadStatusFilter = document.querySelector('#leadStatusFilter');
   const leadAmbassadorFilter = document.querySelector('#leadAmbassadorFilter');
-  const modalSelect = document.querySelector('#statusModalSelect');
-  const modalBackdrop = document.querySelector('#statusModalBackdrop');
   if (!leadBody || !ambassadorBody || !payoutBody) return;
 
   if (leadStatusFilter) {
@@ -779,28 +882,43 @@ function initAdminPage() {
   });
 
   leadBody.addEventListener('click', (event) => {
-    const button = event.target.closest('.open-status-modal');
-    if (!button || !modalSelect || !modalBackdrop) return;
+    const button = event.target.closest('.open-lead-detail');
+    if (!button) return;
     const lead = demoDb.leads.find((item) => item.id === button.dataset.id);
     if (!lead) return;
-    adminState.pendingStatusLeadId = lead.id;
-    modalSelect.innerHTML = LEAD_STATUSES.map((status) => `<option value="${status}" ${status === lead.status ? 'selected' : ''}>${status}</option>`).join('');
-    modalBackdrop.classList.add('open');
+    adminState.selectedLeadId = lead.id;
+    renderLeadDetailPanel();
   });
 
   leadBody.addEventListener('change', async (event) => {
-    const dealInput = event.target.closest('.deal-input');
-    if (!dealInput) return;
-    const lead = demoDb.leads.find((item) => item.id === dealInput.dataset.id);
+    const statusSelect = event.target.closest('.lead-status-select');
+    const offerInput = event.target.closest('.offer-input');
+    const changedId = statusSelect?.dataset.id || offerInput?.dataset.id;
+    if (!changedId) return;
+    const lead = demoDb.leads.find((item) => item.id === changedId);
     if (!lead) return;
-    lead.value = Number(dealInput.value || 0);
-    lead.dealValue = lead.value;
+
+    if (statusSelect) lead.status = statusSelect.value;
+    if (offerInput) lead.offerValue = Number(offerInput.value || 0);
+
+    const normalizedStatus = normalizeLeadStatus(lead.status);
+    if (normalizedStatus === 'offer_sent') {
+      lead.value = Number(lead.offerValue || 0);
+      lead.dealValue = Number(lead.offerValue || 0);
+    }
+    if (normalizedStatus === 'approved') {
+      const approvedValue = Number(lead.offerValue || lead.dealValue || 0);
+      lead.value = approvedValue;
+      lead.dealValue = approvedValue;
+    }
+
     recalculateLeadCommission(lead);
     try {
       await updateLeadInStore(db, lead.id, {
         status: lead.status,
         value: lead.value,
         dealValue: lead.dealValue,
+        offerValue: Number(lead.offerValue || 0),
         commissionRate: Number(lead.commissionRate ?? DEFAULT_COMMISSION_RATE)
       });
     } catch {
@@ -811,7 +929,6 @@ function initAdminPage() {
 
   ambassadorBody.addEventListener('change', async (event) => {
     const statusSelect = event.target.closest('.ambassador-status');
-    const commissionInput = event.target.closest('.commission-input');
 
     if (statusSelect) {
       const ambassador = demoDb.ambassadors.find((item) => item.id === statusSelect.dataset.id);
@@ -825,11 +942,106 @@ function initAdminPage() {
       renderAdmin();
       return;
     }
+  });
 
-    if (commissionInput) {
-      const ambassador = demoDb.ambassadors.find((item) => item.id === commissionInput.dataset.id);
+  payoutBody.addEventListener('click', (event) => {
+    const approveButton = event.target.closest('.approve-payout');
+    const paidButton = event.target.closest('.mark-paid');
+    if (approveButton) {
+      const ambassadorId = approveButton.dataset.id;
+      const invoiceInput = payoutBody.querySelector(`.invoice-input[data-id="${ambassadorId}"]`);
+      const totals = calculateAmbassadorTotals(ambassadorId);
+      if (totals.available <= 0) return;
+      demoDb.payouts.push({
+        id: `payout-${Date.now()}`,
+        ambassadorId,
+        amount: totals.available,
+        invoiceUrl: invoiceInput?.value || '',
+        status: 'approved',
+        createdAt: new Date().toISOString()
+      });
+      demoDb.leads
+        .filter((lead) => lead.ambassadorId === ambassadorId && getLeadPayoutBucket(lead) === 'available')
+        .forEach((lead) => { lead.payoutStatus = 'pending'; });
+    }
+
+    if (paidButton) {
+      const ambassadorId = paidButton.dataset.id;
+      const payout = demoDb.payouts.find((item) => item.ambassadorId === ambassadorId && item.status !== 'paid');
+      if (!payout) return;
+      payout.status = 'paid';
+      payout.paidAt = new Date().toISOString();
+      demoDb.leads
+        .filter((lead) => lead.ambassadorId === ambassadorId && ['available', 'pending'].includes(String(lead.payoutStatus || '').toLowerCase()))
+        .forEach((lead) => {
+          lead.payoutStatus = 'paid';
+          lead.payoutDate = payout.paidAt;
+        });
+    }
+
+    renderAdmin();
+    renderAmbassadorDashboard();
+    renderFlowPage();
+  });
+
+  ambassadorBody.addEventListener('click', (event) => {
+    const button = event.target.closest('.open-ambassador-detail');
+    if (!button) return;
+    adminState.selectedAmbassadorId = button.dataset.id;
+    const ambassador = demoDb.ambassadors.find((item) => item.id === button.dataset.id);
+    if (!ambassador || !detailPanel) return;
+    const leads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassador.id);
+    const totals = calculateAmbassadorTotals(ambassador.id);
+    detailPanel.innerHTML = `
+      <h3>${ambassador.name}</h3>
+      <p class="muted">${ambassador.email}</p>
+      <p class="muted">Total omsetning: ${currency(totals.revenue)}</p>
+      <p class="muted">Total provisjon: ${currency(totals.earned)}</p>
+      <label>Standard provisjon %
+        <input type="number" id="ambassadorDefaultCommission" min="1" max="100" value="${Math.round(Number(ambassador.commissionRate || DEFAULT_COMMISSION_RATE) * 100)}" />
+      </label>
+      <button class="btn-secondary" id="saveAmbassadorCommission">Lagre provisjonssats</button>
+      <h4>Leads</h4>
+      <ul class="simple-list">${leads.map((lead) => `<li>${lead.company} · ${getAdminStatusLabel(lead.status)}</li>`).join('') || '<li class="muted">Ingen leads</li>'}</ul>
+    `;
+  });
+
+  detailPanel?.addEventListener('click', async (event) => {
+    const saveLeadDetailButton = event.target.closest('#saveLeadDetail');
+    const addCommentButton = event.target.closest('#addLeadComment');
+    const saveAmbassadorButton = event.target.closest('#saveAmbassadorCommission');
+
+    if (saveLeadDetailButton) {
+      const lead = demoDb.leads.find((item) => item.id === adminState.selectedLeadId);
+      if (!lead) return;
+      const offerInput = detailPanel.querySelector('#leadDetailOffer');
+      const commissionInput = detailPanel.querySelector('#leadDetailCommission');
+      lead.offerValue = Number(offerInput?.value || 0);
+      lead.commissionRate = Math.max(0.01, Math.min(1, Number(commissionInput?.value || 10) / 100));
+      if (normalizeLeadStatus(lead.status) === 'approved') {
+        lead.value = lead.offerValue;
+        lead.dealValue = lead.offerValue;
+      }
+      recalculateLeadCommission(lead);
+      renderAdmin();
+    }
+
+    if (addCommentButton) {
+      const lead = demoDb.leads.find((item) => item.id === adminState.selectedLeadId);
+      if (!lead) return;
+      const commentInput = detailPanel.querySelector('#leadDetailComment');
+      const text = String(commentInput?.value || '').trim();
+      if (!text) return;
+      ensureLeadMeta(lead);
+      lead.comments.unshift({ text, createdAt: new Date().toISOString() });
+      renderLeadDetailPanel();
+    }
+
+    if (saveAmbassadorButton) {
+      const ambassador = demoDb.ambassadors.find((item) => item.id === adminState.selectedAmbassadorId);
       if (!ambassador) return;
-      ambassador.commissionRate = Math.max(0.01, Math.min(1, Number(commissionInput.value || 10) / 100));
+      const commissionInput = detailPanel.querySelector('#ambassadorDefaultCommission');
+      ambassador.commissionRate = Math.max(0.01, Math.min(1, Number(commissionInput?.value || 10) / 100));
       try {
         await updateDoc(doc(db, 'ambassadors', ambassador.id), { commissionRate: ambassador.commissionRate });
       } catch {
@@ -839,51 +1051,12 @@ function initAdminPage() {
     }
   });
 
-  payoutBody.addEventListener('click', (event) => {
-    const paidButton = event.target.closest('.mark-paid');
-    if (!paidButton) return;
-    const ambassadorId = paidButton.dataset.id;
-    const payoutDateInput = payoutBody.querySelector(`.payout-date-input[data-id="${ambassadorId}"]`);
-    const payoutDate = payoutDateInput?.value || new Date().toISOString().slice(0, 10);
-    const payableLeads = demoDb.leads.filter((lead) => lead.ambassadorId === ambassadorId && getLeadPayoutBucket(lead) === 'available');
-    const paidOut = payableLeads.reduce((sum, lead) => sum + Number(lead.commissionAmount || lead.commission || 0), 0);
-    if (paidOut <= 0) return;
-
-    payableLeads.forEach((lead) => {
-      lead.status = 'paid';
-      lead.payoutStatus = 'paid';
-      lead.payoutDate = `${payoutDate}T00:00:00.000Z`;
-    });
-
-    demoDb.payouts.push({ ambassadorId, paidOut, paidAt: `${payoutDate}T00:00:00.000Z` });
+  pipelineCards?.addEventListener('click', (event) => {
+    const card = event.target.closest('.pipeline-card');
+    if (!card) return;
+    adminState.leadStatusFilter = card.dataset.status;
+    if (leadStatusFilter) leadStatusFilter.value = card.dataset.status;
     renderAdmin();
-    renderAmbassadorDashboard();
-    renderFlowPage();
-  });
-
-  document.querySelector('#closeStatusModal')?.addEventListener('click', closeStatusModal);
-  document.querySelector('#saveStatusModal')?.addEventListener('click', async () => {
-    if (!modalSelect || !adminState.pendingStatusLeadId) return;
-    const lead = demoDb.leads.find((item) => item.id === adminState.pendingStatusLeadId);
-    if (!lead) return;
-    lead.status = modalSelect.value;
-    recalculateLeadCommission(lead);
-    try {
-      await updateLeadInStore(db, lead.id, {
-        status: lead.status,
-        value: Number(lead.value ?? lead.dealValue ?? 0),
-        dealValue: Number(lead.dealValue ?? lead.value ?? 0),
-        commissionRate: Number(lead.commissionRate ?? DEFAULT_COMMISSION_RATE)
-      });
-    } catch {
-      // ignore in local preview
-    }
-    closeStatusModal();
-    renderAdmin();
-  });
-
-  modalBackdrop?.addEventListener('click', (event) => {
-    if (event.target === modalBackdrop) closeStatusModal();
   });
 }
 
