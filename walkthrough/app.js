@@ -73,11 +73,11 @@ const TRANSLATIONS = {
     google: 'Fortsett med Google',
     fb: 'Fortsett med Facebook',
     navLogin: 'Login / Onboarding',
-    navAmbassador: 'Ambassadørdashboard',
-    navAdmin: 'Admin-panel',
-    navProfile: 'Min profil',
+    navAmbassador: 'Ambassador dashboard',
+    navAdmin: 'Superadmin panel',
+    navProfile: 'My profile',
     navPayout: 'Utbetalinger',
-    navFlow: 'Systemflyt'
+    navFlow: 'System flow'
   },
   en: {
     authIn: 'Log in',
@@ -192,7 +192,7 @@ function getCurrentLang() {
   const fromQuery = new URLSearchParams(window.location.search).get('lang');
   if (fromQuery === 'en' || fromQuery === 'nb') return fromQuery;
   const stored = localStorage.getItem('lang');
-  return stored === 'en' ? 'en' : 'nb';
+  return stored === 'nb' ? 'nb' : 'en';
 }
 
 function setLang(lang) {
@@ -331,7 +331,7 @@ function initAuthStateSync() {
   onAuthStateChanged(auth, async (user) => {
     if (isDemoAdminSession() && !user) {
       activateDemoAdminSession();
-      setAuthMessage('Innlogget som demo SuperAdmin.');
+      setAuthMessage('Signed in as demo Superadmin.');
       return;
     }
 
@@ -349,7 +349,7 @@ function initAuthStateSync() {
     syncProfileUi();
     setLang(getCurrentLang());
     if (user?.email) {
-      setAuthMessage(`Innlogget som ${user.email}.`);
+      setAuthMessage(`Signed in as ${user.email}.`);
       redirectToAmbassadorDashboard();
     }
   });
@@ -376,7 +376,7 @@ function initAuthAction() {
       localStorage.setItem('isAdmin', 'false');
       authState.user = null;
       authState.isAdmin = false;
-      setAuthMessage('Demo SuperAdmin er logget ut.');
+      setAuthMessage('Demo Superadmin is signed out.');
       window.location.replace('index.html');
       return;
     }
@@ -386,14 +386,18 @@ function initAuthAction() {
         localStorage.setItem('isLoggedIn', 'false');
       });
       localStorage.setItem('isAdmin', 'false');
-      setAuthMessage('Du er logget ut.');
+      setAuthMessage('You are signed out.');
       if (PROTECTED_PAGES.some((page) => window.location.pathname.endsWith(page))) {
         window.location.replace('index.html');
       }
       return;
     }
 
-    setAuthMessage('Bruk innloggingsknappene for å logge inn.');
+    if (window.location.pathname.endsWith('/index.html') || window.location.pathname.endsWith('/walkthrough/') || window.location.pathname.endsWith('/walkthrough')) {
+      window.loginWithGoogle();
+      return;
+    }
+    window.location.assign('index.html');
   });
 }
 
@@ -404,6 +408,13 @@ function initNavbar() {
   navToggle.addEventListener('click', () => {
     const isOpen = sidebar.classList.toggle('open');
     navToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+}
+
+
+function setBrandLogo() {
+  document.querySelectorAll('.brand').forEach((brand) => {
+    brand.innerHTML = '<img src="https://lirp.cdn-website.com/9ac63216/dms3rep/multi/opt/AnimerLogo.webp-140w.png" alt="Animer logo" class="brand-logo" />';
   });
 }
 
@@ -458,7 +469,7 @@ async function handleRedirectLoginResult() {
     demoDb.userProfile.fullName = result.user.displayName || demoDb.userProfile.fullName;
     demoDb.userProfile.email = result.user.email || demoDb.userProfile.email;
     demoDb.userProfile.avatarUrl = result.user.photoURL || demoDb.userProfile.avatarUrl;
-    setAuthMessage(`Innlogget som ${result.user.email}`);
+    setAuthMessage(`Signed in as ${result.user.email}`);
   } catch {
     // ignore on pages without auth flow
   }
@@ -475,7 +486,7 @@ window.loginWithGoogle = async () => {
     demoDb.userProfile.avatarUrl = result.user.photoURL || demoDb.userProfile.avatarUrl;
     localStorage.setItem('isLoggedIn', 'true');
     hideProtectedNavigation(true);
-    setAuthMessage(`Innlogget som ${result.user.email}.`);
+    setAuthMessage(`Signed in as ${result.user.email}.`);
     syncProfileUi();
     setLang(getCurrentLang());
     window.location.assign('ambassador.html');
@@ -554,9 +565,9 @@ function initLandingPage() {
   const closeDemoAdminModal = document.querySelector('#closeDemoAdminModal');
 
   if (new URLSearchParams(window.location.search).get('blocked') === 'admin') {
-    setAuthMessage('Logg inn for å få tilgang til admin-sider.');
+    setAuthMessage('Log in to access admin pages.');
   } else if (new URLSearchParams(window.location.search).get('blocked') === 'admin-role') {
-    setAuthMessage('Kontoen din mangler admin-claim. Sett custom claim (f.eks. isAdmin/admin) og logg inn på nytt.');
+    setAuthMessage('Your account is missing an admin claim. Set a custom claim (e.g. isAdmin/admin) and sign in again.');
   }
 
   openDemoAdminModal?.addEventListener('click', () => demoAdminModal?.classList.add('open'));
@@ -572,8 +583,8 @@ function initLandingPage() {
       const lead = await createLead({ name: formData.get('name'), company: formData.get('company'), email: formData.get('email') });
       if (leadMessage) {
         leadMessage.textContent = lead.duplicate
-          ? `Lead finnes allerede for ${lead.company}. Eksisterende ambassadør er beholdt.`
-          : `Lead lagret: ${lead.company}`;
+          ? `Lead already exists for ${lead.company}. Existing ambassador is kept.`
+          : `Lead saved: ${lead.company}`;
       }
       leadForm.reset();
 
@@ -581,11 +592,11 @@ function initLandingPage() {
         autoRedirectAfterSubmit({
           messageNode: leadMessage,
           target: authState.isAdmin ? 'admin.html' : 'ambassador.html',
-          message: `Lead lagret: ${lead.company}. Sender deg videre til dashboard...`
+          message: `Lead saved: ${lead.company}. Redirecting you to the dashboard...`
         });
       }
     } catch {
-      if (leadMessage) leadMessage.textContent = 'Kunne ikke lagre lead.';
+      if (leadMessage) leadMessage.textContent = 'Could not save lead.';
     }
   });
 
@@ -596,12 +607,12 @@ function initLandingPage() {
     const password = String(formData.get('password') || '').trim();
 
     if (username !== DEMO_ADMIN_USERNAME || password !== DEMO_ADMIN_PASSWORD) {
-      if (demoAdminMessage) demoAdminMessage.textContent = 'Feil brukernavn eller passord.';
+      if (demoAdminMessage) demoAdminMessage.textContent = 'Invalid username or password.';
       return;
     }
 
     activateDemoAdminSession();
-    if (demoAdminMessage) demoAdminMessage.textContent = 'Demo SuperAdmin er aktivert. Sender deg til admin-panelet...';
+    if (demoAdminMessage) demoAdminMessage.textContent = 'Demo Superadmin activated. Redirecting to the admin panel...';
     window.location.assign('admin.html');
   });
 
@@ -611,11 +622,11 @@ function initLandingPage() {
     demoDb.userProfile.fullName = String(formData.get('fullName') || '');
     demoDb.userProfile.email = String(formData.get('email') || '');
     demoDb.userProfile.phone = String(formData.get('phone') || '');
-    demoDb.userProfile.provider = 'E-post';
+    demoDb.userProfile.provider = 'Email';
     autoRedirectAfterSubmit({
       messageNode: registerMessage,
       target: 'ambassador.html',
-      message: 'Konto registrert lokalt i MVP. Sender deg videre...'
+      message: 'Account created locally for MVP. Redirecting...' 
     });
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('isAdmin', 'false');
@@ -634,7 +645,7 @@ function initLandingPage() {
 function getFilteredLeads() {
   return demoDb.leads.filter((lead) => {
     const statusOk = adminState.leadStatusFilter === 'all' || lead.status === adminState.leadStatusFilter;
-    const ambassador = lead.ambassadorId || 'Ingen';
+    const ambassador = lead.ambassadorId || 'Unassigned';
     const ambassadorOk = adminState.ambassadorFilter === 'all' || ambassador === adminState.ambassadorFilter;
     return statusOk && ambassadorOk;
   });
@@ -654,7 +665,7 @@ function renderAdmin() {
     <tr>
       <td>${lead.company}</td>
       <td>${lead.name}</td>
-      <td>${lead.ambassadorId || 'Ingen'}</td>
+      <td>${lead.ambassadorId || 'Unassigned'}</td>
       <td><span class="badge info">${lead.status}</span></td>
       <td>${payoutBadgeLabel(payoutBucket)}</td>
       <td><input type="number" class="deal-input" data-id="${lead.id}" min="0" value="${lead.dealValue || 0}" ${['approved', 'payout_requested', 'paid'].includes(normalizeLeadStatus(lead.status)) ? '' : 'disabled'} /></td>
@@ -752,8 +763,8 @@ function initAdminPage() {
     leadStatusFilter.innerHTML = `<option value="all">Status</option>${LEAD_STATUSES.map((status) => `<option value="${status}">${status}</option>`).join('')}`;
   }
   if (leadAmbassadorFilter) {
-    const options = ['all', ...new Set(demoDb.leads.map((lead) => lead.ambassadorId || 'Ingen'))];
-    leadAmbassadorFilter.innerHTML = options.map((value) => `<option value="${value}">${value === 'all' ? 'Ambassadør' : value}</option>`).join('');
+    const options = ['all', ...new Set(demoDb.leads.map((lead) => lead.ambassadorId || 'Unassigned'))];
+    leadAmbassadorFilter.innerHTML = options.map((value) => `<option value="${value}">${value === 'all' ? 'Ambassador' : value}</option>`).join('');
   }
 
   renderAdmin();
@@ -967,10 +978,15 @@ function syncProfileUi() {
   const company = document.querySelector('#profileCompany');
   const topAvatar = document.querySelector('#topbarAvatar');
 
-  if (topAvatar) topAvatar.src = demoDb.userProfile.avatarUrl;
+  if (topAvatar) {
+    topAvatar.src = demoDb.userProfile.avatarUrl;
+    topAvatar.style.cursor = 'pointer';
+    topAvatar.title = 'Open my profile';
+    topAvatar.onclick = () => window.location.assign('profile.html');
+  }
   if (avatar) avatar.src = demoDb.userProfile.avatarUrl;
   if (name) name.textContent = demoDb.userProfile.fullName;
-  if (provider) provider.textContent = `Innlogget via ${demoDb.userProfile.provider}`;
+  if (provider) provider.textContent = `Signed in with ${demoDb.userProfile.provider}`;
   if (fullName) fullName.value = demoDb.userProfile.fullName;
   if (email) email.value = demoDb.userProfile.email;
   if (phone) phone.value = demoDb.userProfile.phone;
@@ -989,7 +1005,7 @@ function initProfilePage() {
     demoDb.userProfile.email = String(document.querySelector('#profileEmail')?.value || '');
     demoDb.userProfile.phone = String(document.querySelector('#profilePhone')?.value || '');
     demoDb.userProfile.company = String(document.querySelector('#profileCompany')?.value || '');
-    document.querySelector('#profileMessage').textContent = 'Profil oppdatert.';
+    document.querySelector('#profileMessage').textContent = 'Profile updated.';
     syncProfileUi();
   });
 }
@@ -1015,11 +1031,11 @@ function initInvoicePage() {
     demoDb.invoices.unshift({
       number: String(data.get('invoiceNumber') || ''),
       amount: Number(data.get('amount') || 0),
-      fileName: file?.name || 'uten filnavn',
+      fileName: file?.name || 'no-file-name',
       createdAt: new Date().toISOString()
     });
     render();
-    message.textContent = 'Faktura lastet opp (lokalt i MVP).';
+    message.textContent = 'Invoice uploaded (local MVP demo).';
     form.reset();
   });
 }
@@ -1118,10 +1134,10 @@ function renderFlowPage() {
   if (timelineNode) {
     const today = new Date().toISOString().slice(0, 10);
     timelineNode.innerHTML = `
-      <li><strong>${today}</strong> · Auth user opprettet (${authState.user?.uid ? 'uid satt' : 'ikke innlogget enda'})</li>
-      <li><strong>${today}</strong> · Ambassador-profil ${ambassador ? `funnet (${ambassador.status})` : 'mangler'}</li>
-      <li><strong>${today}</strong> · Referral-kode aktiv: ${referralCode || 'ingen'}</li>
-      <li><strong>${today}</strong> · Leads totalt: ${totals.leads}</li>
+      <li><strong>${today}</strong> · Auth user created (${authState.user?.uid ? 'UID assigned' : 'not signed in yet'})</li>
+      <li><strong>${today}</strong> · Ambassador profile ${ambassador ? `found (${ambassador.status})` : 'missing'}</li>
+      <li><strong>${today}</strong> · Referral code active: ${referralCode || 'none'}</li>
+      <li><strong>${today}</strong> · Total leads: ${totals.leads}</li>
       <li><strong>${today}</strong> · Approved leads: ${totals.won}</li>
       <li><strong>${today}</strong> · Payout pending/paid: ${currency(totals.pending)} / ${currency(totals.paid)}</li>
     `;
@@ -1172,6 +1188,7 @@ initTheme();
 initAuthAction();
 initLanguageToggle();
 initNavbar();
+setBrandLogo();
 if (isDemoAdminSession()) activateDemoAdminSession();
 initLandingPage();
 initAdminPage();

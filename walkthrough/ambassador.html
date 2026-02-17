@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="nb">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ambassadørdashboard</title>
+    <title>Ambassador dashboard</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
@@ -13,74 +13,65 @@
         <div class="brand">Animer</div>
         <nav class="main-nav">
           <a href="index.html" data-i18n="navLogin">Login / Onboarding</a>
-          <a href="ambassador.html" class="active auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
-          <a href="admin.html" class="auth-only" data-i18n="navAdmin">Admin-panel</a>
-          <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
-          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">Systemflyt</a>
+          <a href="ambassador.html" class="active auth-only" data-i18n="navAmbassador">Ambassador dashboard</a>
+          <a href="admin.html" class="auth-only" data-i18n="navAdmin">Superadmin panel</a>
+          <a href="profile.html" class="auth-only" data-i18n="navProfile">My profile</a>
+          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">System flow</a>
         </nav>
       </aside>
       <div class="content">
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle btn-secondary" aria-expanded="false">☰</button>
-            <h1>Ambassadør-dashboard</h1>
+            <h1>Ambassador dashboard</h1>
           </div>
           <div class="topbar-actions">
-            <button id="themeToggle" class="btn-icon btn-secondary" title="Bytt mørk/lys">🌙</button>
+            <button id="themeToggle" class="btn-icon btn-secondary" title="Toggle dark/light">🌙</button>
             <button id="languageToggle" class="btn-icon btn-secondary" title="Switch language">🇬🇧</button>
-            <button id="authAction" class="btn-secondary">Logg ut</button>
-            <img id="topbarAvatar" class="avatar" src="" alt="Profil" />
+            <button id="authAction" class="btn-secondary">Log out</button>
+            <img id="topbarAvatar" class="avatar" src="" alt="Profile" />
           </div>
         </header>
 
         <main class="page">
           <section class="panel">
-            <h2>Velkommen, <span id="welcomeName">Magnus</span>!</h2>
+            <h2>Welcome, <span id="welcomeName">Magnus</span>!</h2>
+            <p class="muted welcome-copy">Track leads, follow earnings, and share your referral link from one clean dashboard.</p>
             <div class="grid">
               <article class="kpi-card"><p class="muted">Leads</p><p id="metricLeads" class="kpi">0</p></article>
-              <article class="kpi-card"><p class="muted">Godkjente salg</p><p id="metricWon" class="kpi">0</p></article>
-              <article class="kpi-card"><p class="muted">Provisjon opptjent</p><p id="metricCommission" class="kpi">0 kr</p></article>
-              <article class="kpi-card"><p class="muted">Til utbetaling</p><p id="metricAvailable" class="kpi">0 kr</p></article>
+              <article class="kpi-card"><p class="muted">Approved sales</p><p id="metricWon" class="kpi">0</p></article>
+              <article class="kpi-card"><p class="muted">Commission earned</p><p id="metricCommission" class="kpi">0 kr</p></article>
+              <article class="kpi-card"><p class="muted">Available for payout</p><p id="metricAvailable" class="kpi">0 kr</p></article>
             </div>
           </section>
 
           <section class="panel">
             <div class="section-header">
-              <h2>Mine leads</h2>
+              <h2>My leads</h2>
               <div class="tab-row" id="ambassadorLeadTabs">
-                <button class="tab-btn active" data-filter="all">Alle</button>
-                <button class="tab-btn" data-filter="approved">Godkjent</button>
-                <button class="tab-btn" data-filter="new">Ny</button>
+                <button class="tab-btn active" data-filter="all">All</button>
+                <button class="tab-btn" data-filter="approved">Approved</button>
+                <button class="tab-btn" data-filter="new">New</button>
               </div>
             </div>
-            <div id="ambassadorEmptyState" class="empty-state" hidden>Ingen leads enda.</div>
+            <div id="ambassadorEmptyState" class="empty-state" hidden>No leads yet.</div>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Firma</th><th>Kontakt</th><th>Status</th><th>Verdi</th><th>Provisjon</th></tr></thead>
+                <thead><tr><th>Company</th><th>Contact</th><th>Status</th><th>Value</th><th>Commission</th></tr></thead>
                 <tbody id="leadList"></tbody>
               </table>
             </div>
           </section>
 
 
-          <section class="panel premium-card">
-            <h2>Lead capture</h2>
-            <p class="muted">Registrer nye leads direkte fra ambassadørsiden.</p>
-            <form id="leadForm" class="form-grid premium-form">
-              <label>Navn<input name="name" placeholder="Kontaktperson" required /></label>
-              <label>Firma<input name="company" placeholder="Firma AS" required /></label>
-              <label>E-post<input name="email" type="email" placeholder="kontakt@firma.no" required /></label>
-              <button class="btn-primary" type="submit">Lagre lead</button>
-              <p id="leadMessage" class="muted" aria-live="polite"></p>
-            </form>
-          </section>
+          
 
           <section class="panel">
             <div class="section-header">
-              <h2>Del på sosiale medier</h2>
-              <button id="copyLink" class="btn-primary">Kopier lenke</button>
+              <h2>Share on social media</h2>
+              <button id="copyLink" class="btn-primary">Copy link</button>
             </div>
-            <p class="muted">Velg kanal, skriv kort tekst og opprett delingslenke automatisk.</p>
+            <p class="muted">Choose a channel, write a short message, and generate a share link automatically.</p>
             <div class="social-icons">
               <button class="social-icon" data-platform="LinkedIn">in</button>
               <button class="social-icon" data-platform="Facebook">f</button>
@@ -92,28 +83,28 @@
           <section class="panel">
             <h2>Resultatgrafer</h2>
             <div class="chart-grid">
-              <article class="chart-card"><h3>Inntekt</h3><div class="chart-wrap"><canvas id="incomeChart"></canvas></div></article>
-              <article class="chart-card"><h3>Tilbud sendt</h3><div class="chart-wrap"><canvas id="offerChart"></canvas></div></article>
-              <article class="chart-card"><h3>Kanalmiks</h3><div class="chart-wrap"><canvas id="channelChart"></canvas></div></article>
-              <article class="chart-card"><h3>Payout utvikling</h3><div class="chart-wrap"><canvas id="payoutChart"></canvas></div></article>
-              <article class="chart-card"><h3>Lead-stadier</h3><div class="chart-wrap"><canvas id="leadStageChart"></canvas></div></article>
+              <article class="chart-card"><h3>Income</h3><div class="chart-wrap"><canvas id="incomeChart"></canvas></div></article>
+              <article class="chart-card"><h3>Offers sent</h3><div class="chart-wrap"><canvas id="offerChart"></canvas></div></article>
+              <article class="chart-card"><h3>Channel mix</h3><div class="chart-wrap"><canvas id="channelChart"></canvas></div></article>
+              <article class="chart-card"><h3>Payout trend</h3><div class="chart-wrap"><canvas id="payoutChart"></canvas></div></article>
+              <article class="chart-card"><h3>Lead stages</h3><div class="chart-wrap"><canvas id="leadStageChart"></canvas></div></article>
             </div>
           </section>
         </main>
-        <footer class="site-footer">© Levert av Setai.no</footer>
+        <footer class="site-footer">© Delivered by Setai.no</footer>
       </div>
     </div>
 
     <div id="shareModalBackdrop" class="modal-backdrop">
       <div class="modal">
-        <h2>Del innlegg</h2>
-        <p id="sharePlatformLabel" class="muted">Plattform</p>
-        <label>Tekst
-          <textarea id="shareText" rows="4" placeholder="Kort tekst som blir med i delingslenken"></textarea>
+        <h2>Share post</h2>
+        <p id="sharePlatformLabel" class="muted">Platform</p>
+        <label>Message
+          <textarea id="shareText" rows="4" placeholder="Short message to include in the share link"></textarea>
         </label>
         <div class="row-actions">
-          <button id="closeShareModal" class="btn-secondary">Avbryt</button>
-          <button id="saveShareModal" class="btn-primary">Opprett delingslenke</button>
+          <button id="closeShareModal" class="btn-secondary">Cancel</button>
+          <button id="saveShareModal" class="btn-primary">Create share link</button>
         </div>
       </div>
     </div>

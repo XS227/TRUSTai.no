@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="nb">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin-panel</title>
+    <title>Superadmin panel</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
@@ -13,75 +13,79 @@
         <div class="brand">Animer</div>
         <nav class="main-nav">
           <a href="index.html" data-i18n="navLogin">Login / Onboarding</a>
-          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
-          <a href="admin.html" class="active auth-only" data-i18n="navAdmin">Admin-panel</a>
-          <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
-          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">Systemflyt</a>
+          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassador dashboard</a>
+          <a href="admin.html" class="active auth-only" data-i18n="navAdmin">Superadmin panel</a>
+          <a href="profile.html" class="auth-only" data-i18n="navProfile">My profile</a>
+          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">System flow</a>
         </nav>
       </aside>
       <div class="content">
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle btn-secondary" aria-expanded="false">☰</button>
-            <h1>Admin-panel</h1>
+            <h1>Superadmin panel</h1>
           </div>
           <div class="topbar-actions">
-            <button id="themeToggle" class="btn-icon btn-secondary" title="Bytt mørk/lys">🌙</button>
+            <button id="themeToggle" class="btn-icon btn-secondary" title="Toggle dark/light">🌙</button>
             <button id="languageToggle" class="btn-icon btn-secondary" title="Switch language">🇬🇧</button>
-            <button id="authAction" class="btn-secondary">Logg ut</button>
-            <img id="topbarAvatar" class="avatar" src="" alt="Profil" />
+            <button id="authAction" class="btn-secondary">Log out</button>
+            <img id="topbarAvatar" class="avatar" src="" alt="Profile" />
           </div>
         </header>
 
         <main class="page">
           <section class="panel">
+            <h2>Superadmin control center</h2>
+            <p class="muted">Manage leads, ambassador status, and payouts with the same clean layout used across the rest of the platform.</p>
+          </section>
+          <section class="panel">
             <div class="section-header">
-              <h2>Leads</h2>
+              <h2>Leads overview</h2>
               <div class="filters">
                 <select id="leadStatusFilter"><option value="all">Status</option></select>
-                <select id="leadAmbassadorFilter"><option value="all">Ambassadør</option></select>
+                <select id="leadAmbassadorFilter"><option value="all">Ambassador</option></select>
               </div>
             </div>
-            <div id="leadEmptyState" class="empty-state" hidden>Ingen leads matcher filter.</div>
+            <div id="leadEmptyState" class="empty-state" hidden>No leads match the filter.</div>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Firma</th><th>Kontakt</th><th>Ambassadør</th><th>Lead status</th><th>Payout status</th><th>Verdi</th><th>Provisjon</th><th>Handling</th></tr></thead>
+                <thead><tr><th>Company</th><th>Contact</th><th>Ambassador</th><th>Lead status</th><th>Payout status</th><th>Value</th><th>Commission</th><th>Action</th></tr></thead>
                 <tbody id="adminLeadBody"></tbody>
               </table>
             </div>
           </section>
 
           <section class="panel">
-            <h2>Ambassadører + provisjon</h2>
+            <h2>Ambassadors & commission</h2>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Navn</th><th>Status</th><th>Leads</th><th>Omsetning</th><th>Sats</th><th>Opptjent</th><th>Unpaid commission</th><th>Handling</th></tr></thead>
+                <thead><tr><th>Name</th><th>Status</th><th>Leads</th><th>Revenue</th><th>Rate</th><th>Earned</th><th>Unpaid commission</th><th>Action</th></tr></thead>
                 <tbody id="adminAmbassadorBody"></tbody>
               </table>
             </div>
           </section>
 
           <section class="panel">
-            <h2>Utbetalinger</h2>
+            <h2>Payouts</h2>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Ambassadør</th><th>Earned</th><th>Available for payout</th><th>Pending</th><th>Paid</th><th>Unpaid commission</th><th>Sist utbetalt</th><th>Operasjon</th></tr></thead>
+                <thead><tr><th>Ambassador</th><th>Earned</th><th>Available for payout</th><th>Pending</th><th>Paid</th><th>Unpaid commission</th><th>Last payout</th><th>Operation</th></tr></thead>
                 <tbody id="adminPayoutBody"></tbody>
               </table>
             </div>
           </section>
         </main>
-        <footer class="site-footer">© Levert av Setai.no</footer>
+        <footer class="site-footer">© Delivered by Setai.no</footer>
       </div>
     </div>
 
     <div id="statusModalBackdrop" class="modal-backdrop">
       <div class="modal">
-        <h2>Oppdater leadstatus</h2>
-        <label>Ny status<select id="statusModalSelect"></select></label>
+        <h2>Update lead status</h2>
+        <label>New status<select id="statusModalSelect"></select></label>
         <div class="row-actions">
-          <button id="closeStatusModal" class="btn-secondary">Avbryt</button>
-          <button id="saveStatusModal" class="btn-primary">Lagre</button>
+          <button id="closeStatusModal" class="btn-secondary">Cancel</button>
+          <button id="saveStatusModal" class="btn-primary">Save</button>
         </div>
       </div>
     </div>
