@@ -49,7 +49,8 @@ body {
   border-bottom: 1px solid var(--border);
   padding: 12px 22px;
 }
-.brand { font-size: 1.25rem; font-weight: 700; margin: 0; }
+.brand { font-size: 1.25rem; font-weight: 700; margin: 0; display:flex; align-items:center; }
+.brand-logo { height: 34px; width: auto; display:block; }
 .main-nav { display: flex; flex-wrap: wrap; gap: 8px; }
 .sidebar a {
   color: var(--text);
@@ -237,6 +238,7 @@ label { display: grid; gap: 4px; color: var(--muted); font-size: .83rem; }
 .nav-toggle { display: none; }
 
 @media (max-width: 900px) {
+  .contact-form { grid-template-columns: 1fr; }
   .hero-split { grid-template-columns: 1fr; }
   .sidebar {
     position: static;
@@ -335,4 +337,36 @@ body[data-theme='dark'] .premium-form {
 .form-success {
   color: #0369a1;
   font-weight: 600;
+}
+
+
+.welcome-copy {
+  margin: 2px 0 0;
+  max-width: 64ch;
+}
+
+.contact-section {
+  gap: 18px;
+}
+
+.contact-intro p {
+  margin: 8px 0 0;
+  max-width: 62ch;
+}
+
+.contact-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.contact-form textarea,
+.contact-form select,
+.contact-form .contact-submit,
+.contact-form #formMessage {
+  grid-column: 1 / -1;
+}
+
+.contact-submit {
+  margin-top: 8px;
 }

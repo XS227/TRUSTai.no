@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="nb">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Min profil</title>
+    <title>My profile</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -12,67 +12,79 @@
         <div class="brand">Animer</div>
         <nav class="main-nav">
           <a href="index.html" data-i18n="navLogin">Login / Onboarding</a>
-          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
-          <a href="admin.html" class="auth-only" data-i18n="navAdmin">Admin-panel</a>
-          <a href="profile.html" class="active auth-only" data-i18n="navProfile">Min profil</a>
-          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">Systemflyt</a>
+          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassador dashboard</a>
+          <a href="admin.html" class="auth-only" data-i18n="navAdmin">Superadmin panel</a>
+          <a href="profile.html" class="active auth-only" data-i18n="navProfile">My profile</a>
+          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">System flow</a>
         </nav>
       </aside>
       <div class="content">
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle btn-secondary" aria-expanded="false">☰</button>
-            <h1>Min profil</h1>
+            <h1>My profile</h1>
           </div>
           <div class="topbar-actions">
-            <button id="themeToggle" class="btn-icon btn-secondary" title="Bytt mørk/lys">🌙</button>
+            <button id="themeToggle" class="btn-icon btn-secondary" title="Toggle dark/light">🌙</button>
             <button id="languageToggle" class="btn-icon btn-secondary" title="Switch language">🇬🇧</button>
-            <button id="authAction" class="btn-secondary">Logg ut</button>
-            <img id="topbarAvatar" class="avatar" src="" alt="Profil" />
+            <button id="authAction" class="btn-secondary">Log out</button>
+            <img id="topbarAvatar" class="avatar" src="" alt="Profile" />
           </div>
         </header>
 
         <main class="page">
           <section class="panel">
             <div class="row-actions" style="justify-content:flex-start;">
-              <img id="profileAvatar" class="avatar" style="width:80px;height:80px;" src="" alt="Profilbilde" />
+              <img id="profileAvatar" class="avatar" style="width:80px;height:80px;" src="" alt="Profile image" />
               <div>
                 <h2 id="profileName">-</h2>
-                <p id="profileProvider" class="muted">Innlogget via -</p>
+                <p id="profileProvider" class="muted">Signed in with -</p>
               </div>
             </div>
             <form id="profileForm" class="form-grid">
-              <label>Fullt navn<input id="profileFullName" name="fullName" required /></label>
-              <label>E-post<input id="profileEmail" name="email" type="email" required /></label>
-              <label>Telefon<input id="profilePhone" name="phone" /></label>
-              <label>Selskap<input id="profileCompany" name="company" /></label>
-              <button class="btn-primary" type="submit">Lagre profil</button>
+              <label>Full name<input id="profileFullName" name="fullName" required /></label>
+              <label>Email<input id="profileEmail" name="email" type="email" required /></label>
+              <label>Phone<input id="profilePhone" name="phone" /></label>
+              <label>Company<input id="profileCompany" name="company" /></label>
+              <button class="btn-primary" type="submit">Save profile</button>
               <p id="profileMessage" class="muted"></p>
             </form>
           </section>
 
           <section class="panel">
-            <h2>Utbetalinger og faktura</h2>
+            <h2>Payouts and invoices</h2>
             <form id="invoiceForm" class="form-grid">
-              <label>Fakturanummer<input name="invoiceNumber" required /></label>
-              <label>Beløp (NOK)<input name="amount" type="number" min="0" required /></label>
-              <label>Fil (PDF / bilde)
+              <label>Invoice number<input name="invoiceNumber" required /></label>
+              <label>Amount (NOK)<input name="amount" type="number" min="0" required /></label>
+              <label>File (PDF / image)
                 <input name="invoiceFile" type="file" accept=".pdf,image/*" required />
               </label>
-              <button class="btn-primary" type="submit">Last opp</button>
+              <button class="btn-primary" type="submit">Upload</button>
               <p id="invoiceMessage" class="muted"></p>
             </form>
-            <div id="invoiceEmptyState" class="empty-state">Ingen fakturaer lastet opp.</div>
+            <div id="invoiceEmptyState" class="empty-state">No invoices uploaded.</div>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Nr</th><th>Beløp</th><th>Fil</th><th>Dato</th></tr></thead>
+                <thead><tr><th>Nr</th><th>Amount</th><th>File</th><th>Date</th></tr></thead>
                 <tbody id="invoiceTableBody"></tbody>
               </table>
             </div>
           </section>
+          <section class="panel premium-card">
+            <h2>Lead capture</h2>
+            <p class="muted">Register new leads directly from your profile.</p>
+            <form id="leadForm" class="form-grid premium-form">
+              <label>Name<input name="name" placeholder="Contact person" required /></label>
+              <label>Company<input name="company" placeholder="Company Ltd" required /></label>
+              <label>Email<input name="email" type="email" placeholder="contact@company.com" required /></label>
+              <button class="btn-primary" type="submit">Save lead</button>
+              <p id="leadMessage" class="muted" aria-live="polite"></p>
+            </form>
+          </section>
+
 
         </main>
-        <footer class="site-footer">© Levert av Setai.no</footer>
+        <footer class="site-footer">© Delivered by Setai.no</footer>
       </div>
     </div>
     <script type="module" src="app.js"></script>

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="nb">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Utbetalinger og faktura</title>
+    <title>Payouts and invoices</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -12,36 +12,36 @@
         <div class="brand">Animer</div>
         <nav class="main-nav">
           <a href="index.html" data-i18n="navLogin">Login / Onboarding</a>
-          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadørdashboard</a>
-          <a href="admin.html" class="auth-only" data-i18n="navAdmin">Admin-panel</a>
-          <a href="profile.html" class="active auth-only" data-i18n="navProfile">Min profil</a>
-          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">Systemflyt</a>
+          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassador dashboard</a>
+          <a href="admin.html" class="auth-only" data-i18n="navAdmin">Superadmin panel</a>
+          <a href="profile.html" class="active auth-only" data-i18n="navProfile">My profile</a>
+          <a href="flow-system.html" class="auth-only" data-i18n="navFlow">System flow</a>
         </nav>
       </aside>
       <div class="content">
         <header class="topbar">
           <div class="topbar-left">
             <button id="navToggle" class="nav-toggle btn-secondary" aria-expanded="false">☰</button>
-            <h1>Utbetalinger flyttet</h1>
+            <h1>Payouts moved</h1>
           </div>
           <div class="topbar-actions">
-            <button id="themeToggle" class="btn-icon btn-secondary" title="Bytt mørk/lys">🌙</button>
+            <button id="themeToggle" class="btn-icon btn-secondary" title="Toggle dark/light">🌙</button>
             <button id="languageToggle" class="btn-icon btn-secondary" title="Switch language">🇬🇧</button>
-            <button id="authAction" class="btn-secondary">Logg ut</button>
-            <img id="topbarAvatar" class="avatar" src="" alt="Profil" />
+            <button id="authAction" class="btn-secondary">Log out</button>
+            <img id="topbarAvatar" class="avatar" src="" alt="Profile" />
           </div>
         </header>
 
         <main class="page">
           <section class="panel">
-            <h2>Utbetalinger ligger nå under Min profil</h2>
-            <p class="muted">Du finner opplasting av faktura og historikk på profilsiden.</p>
+            <h2>Payouts are now under My profile</h2>
+            <p class="muted">You can upload invoices and review history on the profile page.</p>
             <div class="row-actions" style="justify-content:flex-start;">
-              <a class="btn-primary cta-link" href="profile.html">Gå til Min profil</a>
+              <a class="btn-primary cta-link" href="profile.html">Go to My profile</a>
             </div>
           </section>
         </main>
-        <footer class="site-footer">© Levert av Setai.no</footer>
+        <footer class="site-footer">© Delivered by Setai.no</footer>
       </div>
     </div>
     <script type="module" src="app.js"></script>
