@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="nb">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Superadmin panel</title>
+    <title>Superadmin panel (Norsk)</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
@@ -18,7 +18,7 @@
           <a href="#income">Inntekter</a>
           <a href="#payouts">Utbetalinger</a>
           <a href="#content">Delings tekster</a>
-          <a href="#tickets">Tickets</a>
+          <a href="#tickets">Tickets / FAQ</a>
           <a href="#landing">Landingsside</a>
           <a href="#settings">Innstillinger</a>
           <a href="index.html" id="sidebarLogout">Logg ut</a>
@@ -32,7 +32,18 @@
           </div>
           <div class="topbar-actions superadmin-topbar-actions">
             <input id="globalSearch" class="global-search" placeholder="Søk lead / ambassadør / firma" />
-            <button id="notificationButton" class="btn-icon btn-secondary" title="Varsler">🔔</button>
+            <details class="user-dropdown notification-dropdown">
+              <summary id="notificationButton" class="btn-icon btn-secondary" title="Varsler">🔔</summary>
+              <div class="user-dropdown-menu notification-menu">
+                <p><strong>Varsler</strong></p>
+                <ul class="simple-list">
+                  <li>Nye leads: <span id="notifNewLeads">0</span></li>
+                  <li>Nye ambassadør-søknader: <span id="notifAmbassadorApplications">0</span></li>
+                  <li>Fakturaer til godkjenning: <span id="notifInvoices">0</span></li>
+                  <li>Nye tickets: <span id="notifTickets">0</span></li>
+                </ul>
+              </div>
+            </details>
             <button id="themeToggle" class="btn-icon btn-secondary" title="Toggle dark/light">🌙</button>
             <button id="languageToggle" class="btn-icon btn-secondary" title="Switch language">🇬🇧</button>
             <details class="user-dropdown">
@@ -155,14 +166,23 @@
               </div>
               <aside class="lead-detail" id="ticketDetailPanel"><h3>Ticket-detalj</h3><p class="muted">Velg en ticket.</p></aside>
             </div>
+            <h3>FAQ</h3>
+            <div class="row-actions"><button id="addFaqBtn" class="btn-secondary">Legg til FAQ</button></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Kategori</th><th>Spørsmål</th><th>Svar</th></tr></thead>
+                <tbody id="faqBody"></tbody>
+              </table>
+            </div>
           </section>
 
           <section class="panel" id="landing">
             <h2>Landingsside / Rekruttering</h2>
             <p class="muted">Fast mal klar for utfylling med felter for headline, verdiforslag, provisjonsmodell, vilkår og registreringsskjema.</p>
             <div class="form-grid two-columns">
-              <label>Programnavn<input id="landingProgramName" value="TrustAi Ambassador Program" /></label>
+              <label>Programnavn<input id="landingProgramName" value="TrustAi ambassadørprogram" /></label>
               <label>CTA tekst<input id="landingCta" value="Søk som ambassadør" /></label>
+              <label>Hovedspråk<input id="landingLanguage" value="Norsk" readonly /></label>
               <label>Hero tittel<textarea id="landingHero" rows="2">Bli med i vårt ambassadørprogram</textarea></label>
               <label>Beskrivelse<textarea id="landingDescription" rows="2">Del nettverket ditt og tjen provisjon per godkjent avtale.</textarea></label>
             </div>
