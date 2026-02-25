@@ -9,11 +9,11 @@
     "public": "walkthrough",
     "rewrites": [
       {
-        "source": "/animer/12/amb**",
+        "source": "/trustai/12/amb**",
         "destination": "/referral.html"
       },
       {
-        "source": "/animer/12/a/**",
+        "source": "/trustai/12/a/**",
         "destination": "/referral.html"
       }
     ]

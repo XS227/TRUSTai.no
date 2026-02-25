@@ -27,7 +27,7 @@ Eksempel:
 
 ## 3) Referral og attribution
 
-- Delbar lenke: `animer.no/a/{referralCode}`.
+- Delbar lenke: `trustai.no/a/{referralCode}`.
 - Klient finner `referralCode`, slår opp ambassadør, og lagrer `ambassadorId` i cookie.
 - Ved lead-innsending leses cookie, og `ambassadorId` settes på lead.
 - Attributionmodell i MVP: `first_click` (konfigureres i `settings/global`).

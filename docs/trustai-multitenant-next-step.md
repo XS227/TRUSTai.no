@@ -303,9 +303,9 @@ Kunden inkluderer kun:
 <script src="https://trustai.no/sdk.js"></script>
 <script>
   TrustAISDK.init({
-    clientId: "animer",
+    clientId: "trustai",
     apiBase: "https://trustai.no/api",
-    redirectTo: "https://animer.no",
+    redirectTo: "https://trustai.no",
   });
 </script>
 ```

@@ -42,7 +42,7 @@ Statusverdier i MVP:
 {
   "id": "amb-nora",
   "name": "Nora Hansen",
-  "email": "nora@animer.no",
+  "email": "nora@trustai.no",
   "status": "Active",
   "defaultCommission": 12,
   "totalRevenue": 160000,
