@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="nb">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TrustAi | Landing</title>
+    <title>TrustAi | Landingsside</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,10 +11,10 @@
       <aside class="sidebar">
         <div class="brand">TrustAi</div>
         <nav class="main-nav">
-          <a href="index.html" class="active" data-i18n="navLogin">Login / Onboarding</a>
-          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassador dashboard</a>
+          <a href="index.html" class="active" data-i18n="navLogin">Innlogging / Onboarding</a>
+          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadør-dashboard</a>
           <a href="admin.html" class="auth-only" data-i18n="navAdmin">Superadmin panel</a>
-          <a href="profile.html" class="auth-only" data-i18n="navProfile">My profile</a>
+          <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
           <a href="flow-system.html" class="auth-only" data-i18n="navFlow">System flow</a>
         </nav>
       </aside>
@@ -36,25 +36,25 @@
           <section class="panel hero-panel hero-split">
             <div>
               <p class="eyebrow">Welcome</p>
-              <h2>TrustAi Leads helps ambassadors generate predictable growth</h2>
+              <h2>TrustAi Leads hjelper ambassadører med forutsigbar vekst</h2>
               <p>
-                Everything is in one place: submit leads, track status in real time, and follow commission clearly.
-                Built for fast onboarding and smooth sales handoff.
+                Alt er samlet på ett sted: registrer leads, følg status i sanntid og se provisjon tydelig.
+                Bygget for rask onboarding og smidig salgsoppfølging.
               </p>
               <div class="row-actions" style="justify-content:flex-start;">
-                <button id="openDemoAdminModal" class="btn-secondary">View demo</button>
+                <button id="openDemoAdminModal" class="btn-secondary">Se demo</button>
               </div>
             </div>
             <article class="kpi-card premium-card">
-              <h3>Become an ambassador</h3>
-              <p class="muted">Choose a sign-in option and access your ambassador workspace right away.</p>
+              <h3>Bli ambassadør</h3>
+              <p class="muted">Velg innloggingsmetode og få tilgang til ambassadør-arbeidsflaten med en gang.</p>
               <div class="form-grid">
-                <button id="loginGoogle" class="btn-primary">Continue with Google</button>
+                <button id="loginGoogle" class="btn-primary">Fortsett med Google</button>
                 <form id="registerForm" class="form-grid premium-form">
-                  <label>Full name<input name="fullName" placeholder="E.g. Nora Hansen" required /></label>
-                  <label>Email<input name="email" type="email" placeholder="deg@firma.no" required /></label>
-                  <label>Phone<input name="phone" placeholder="+47 ..." /></label>
-                  <button class="btn-secondary" type="submit">Create account with email</button>
+                  <label>Fullt navn<input name="fullName" placeholder="E.g. Nora Hansen" required /></label>
+                  <label>E-post<input name="email" type="email" placeholder="deg@firma.no" required /></label>
+                  <label>Telefon<input name="phone" placeholder="+47 ..." /></label>
+                  <button class="btn-secondary" type="submit">Opprett konto med e-post</button>
                 </form>
                 <p id="authMessage" class="muted" aria-live="polite"></p>
                 <p id="registerMessage" class="muted" aria-live="polite"></p>
@@ -64,28 +64,28 @@
 
           <section id="be-om-pris" class="panel contact-section">
             <div class="contact-intro">
-              <h2>Request a quote for an animation film</h2>
-              <p>Share a few details and our team will send you a no-obligation quote.</p>
+              <h2>Be om tilbud på animasjonsfilm</h2>
+              <p>Del noen detaljer, så sender teamet vårt et uforpliktende tilbud.</p>
             </div>
 
             <form id="priceForm" class="contact-form">
-              <input type="text" id="companyName" placeholder="Company name" required />
-              <input type="text" id="contactName" placeholder="Contact person" required />
-              <input type="email" id="email" placeholder="Email" required />
-              <input type="tel" id="phone" placeholder="Phone" />
+              <input type="text" id="companyName" placeholder="Firmanavn" required />
+              <input type="text" id="contactName" placeholder="Kontaktperson" required />
+              <input type="email" id="email" placeholder="E-post" required />
+              <input type="tel" id="phone" placeholder="Telefon" />
 
               <select id="filmType">
-                <option value="">What is the film for?</option>
-                <option value="advertising">Advertising</option>
-                <option value="training">Training</option>
-                <option value="explainer">Explainer video</option>
-                <option value="other">Other</option>
+                <option value="">Hva skal filmen brukes til?</option>
+                <option value="advertising">Reklame</option>
+                <option value="training">Opplæring</option>
+                <option value="explainer">Forklaringsvideo</option>
+                <option value="other">Annet</option>
               </select>
 
-              <textarea id="description" placeholder="Short project description..." rows="4"></textarea>
+              <textarea id="description" placeholder="Kort prosjektbeskrivelse..." rows="4"></textarea>
 
               <button type="submit" class="btn-primary contact-submit">
-                Send request
+                Send forespørsel
               </button>
 
               <p id="formMessage" class="muted"></p>
@@ -93,22 +93,22 @@
           </section>
 
           <section class="panel">
-            <h2>How can ambassadors earn with this system?</h2>
+            <h2>Hvordan kan ambassadører tjene med dette systemet?</h2>
             <p>
-              Typical packages range from <strong>NOK 40,000 to NOK 200,000</strong>. With <strong>4–10 sales per month</strong>,
-              an active ambassador can build a stable monthly income stream.
+              Typiske pakker ligger mellom <strong>40 000 og 200 000 kr</strong>. Med <strong>4–10 salg per måned</strong>
+              kan en aktiv ambassadør bygge en stabil månedlig inntekt.
             </p>
             <div class="grid">
               <article class="kpi-card">
-                <p class="muted">Package value</p>
+                <p class="muted">Pakkeverdi</p>
                 <p class="kpi">40k–200k</p>
               </article>
               <article class="kpi-card">
-                <p class="muted">Sales / month</p>
+                <p class="muted">Salg / mnd</p>
                 <p class="kpi">4–10</p>
               </article>
               <article class="kpi-card">
-                <p class="muted">Potential turnover / month</p>
+                <p class="muted">Potensiell omsetning / mnd</p>
                 <p class="kpi">160k–2M</p>
               </article>
             </div>
@@ -124,16 +124,16 @@
             <h2>FAQ</h2>
             <div class="faq-list">
               <details>
-                <summary>Do I need technical experience to use TrustAi Leads?</summary>
-                <p>No. The platform is designed to be simple, with clear dashboards and guided flows.</p>
+                <summary>Må jeg ha teknisk erfaring for å bruke TrustAi Leads?</summary>
+                <p>Nei. Plattformen er laget for å være enkel, med tydelige dashboards og guider.</p>
               </details>
               <details>
-                <summary>Which sign-in option should I choose?</summary>
-                <p>Google is fastest, but you can also create an account with email during onboarding.</p>
+                <summary>Hvilken innloggingsmetode bør jeg velge?</summary>
+                <p>Google er raskest, men du kan også opprette konto med e-post i onboarding.</p>
               </details>
               <details>
-                <summary>What happens after sign-in?</summary>
-                <p>Demo content is hidden, and you are sent directly to your ambassador dashboard.</p>
+                <summary>Hva skjer etter innlogging?</summary>
+                <p>Demo-innhold skjules, og du sendes direkte til ambassadør-dashboardet.</p>
               </details>
             </div>
           </section>
@@ -144,14 +144,14 @@
 
     <div id="demoAdminModal" class="modal-backdrop">
       <div class="modal">
-        <h2>Demo superadmin for investor presentation</h2>
-        <p class="muted">Sign in with demo credentials to view the Superadmin setup.</p>
+        <h2>Demo-superadmin for investorpresentasjon</h2>
+        <p class="muted">Logg inn med demo-bruker for å se superadmin-oppsettet.</p>
         <form id="demoAdminLoginForm" class="form-grid">
-          <label>Username<input name="username" autocomplete="username" required /></label>
-          <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
+          <label>Brukernavn<input name="username" autocomplete="username" required /></label>
+          <label>Passord<input name="password" type="password" autocomplete="current-password" required /></label>
           <div class="row-actions">
-            <button type="button" id="closeDemoAdminModal" class="btn-secondary">Close</button>
-            <button type="submit" class="btn-primary">Sign in as demo superadmin</button>
+            <button type="button" id="closeDemoAdminModal" class="btn-secondary">Lukk</button>
+            <button type="submit" class="btn-primary">Logg inn som demo-superadmin</button>
           </div>
           <p id="demoAdminMessage" class="muted" aria-live="polite"></p>
         </form>
@@ -185,7 +185,7 @@
         e.preventDefault();
 
         const messageBox = document.getElementById("formMessage");
-        messageBox.textContent = "Sending...";
+        messageBox.textContent = "Sender...";
 
         try {
           const ambassadorId = getCookie("ambassadorRef");
@@ -211,7 +211,7 @@
           });
 
           messageBox.style.color = "green";
-          messageBox.textContent = "Thanks! We will contact you shortly.";
+          messageBox.textContent = "Takk! Vi kontakter deg snart.";
 
           document.getElementById("priceForm").reset();
 
