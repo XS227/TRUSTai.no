@@ -33,28 +33,34 @@
         </header>
 
         <main class="page">
-          <section class="panel hero-panel hero-split">
-            <div>
-              <p class="eyebrow">Welcome</p>
-              <h2>TrustAi Leads helps ambassadors generate predictable growth</h2>
-              <p>
-                Everything is in one place: submit leads, track status in real time, and follow commission clearly.
-                Built for fast onboarding and smooth sales handoff.
+          <section class="panel hero-panel hero-split landing-hero">
+            <div class="hero-copy">
+              <p class="eyebrow">Productivity platform</p>
+              <h2>Run your growth pipeline with calm, focused clarity.</h2>
+              <p class="muted hero-lead">
+                TrustAi brings lead capture, handoff, and ambassador payouts into one modern workflow.
+                No clutter. No guesswork. Just a clean system that helps your team move faster.
               </p>
-              <div class="row-actions" style="justify-content:flex-start;">
-                <button id="openDemoAdminModal" class="btn-secondary">View demo</button>
+              <div class="row-actions hero-actions">
+                <a class="btn-primary cta-link" href="#be-om-pris">Start free trial</a>
+                <button id="openDemoAdminModal" class="btn-secondary">Book live demo</button>
+              </div>
+              <div class="hero-trust">
+                <span>99.9% uptime</span>
+                <span>Realtime lead sync</span>
+                <span>Secure payouts</span>
               </div>
             </div>
-            <article class="kpi-card premium-card">
-              <h3>Become an ambassador</h3>
-              <p class="muted">Choose a sign-in option and access your ambassador workspace right away.</p>
+            <article class="kpi-card premium-card auth-card">
+              <h3>Create your workspace</h3>
+              <p class="muted">Get started in under two minutes with your existing account.</p>
               <div class="form-grid">
                 <button id="loginGoogle" class="btn-primary">Continue with Google</button>
                 <form id="registerForm" class="form-grid premium-form">
                   <label>Full name<input name="fullName" placeholder="E.g. Nora Hansen" required /></label>
-                  <label>Email<input name="email" type="email" placeholder="deg@firma.no" required /></label>
+                  <label>Email<input name="email" type="email" placeholder="name@company.com" required /></label>
                   <label>Phone<input name="phone" placeholder="+47 ..." /></label>
-                  <button class="btn-secondary" type="submit">Create account with email</button>
+                  <button class="btn-secondary" type="submit">Create workspace</button>
                 </form>
                 <p id="authMessage" class="muted" aria-live="polite"></p>
                 <p id="registerMessage" class="muted" aria-live="polite"></p>
@@ -62,10 +68,70 @@
             </article>
           </section>
 
+          <section class="panel screenshot-panel">
+            <div class="section-header">
+              <div>
+                <p class="eyebrow">Product tour</p>
+                <h2>Sleek interface, built for daily momentum</h2>
+              </div>
+            </div>
+            <div class="screen-grid">
+              <article class="screen-card main-screen">
+                <p class="screen-label">Pipeline overview</p>
+                <div class="screen-chrome">
+                  <span></span><span></span><span></span>
+                </div>
+                <div class="screen-mock chart-mock">
+                  <div class="mock-line long"></div>
+                  <div class="mock-bars">
+                    <span style="--h:70%"></span>
+                    <span style="--h:42%"></span>
+                    <span style="--h:86%"></span>
+                    <span style="--h:58%"></span>
+                  </div>
+                </div>
+              </article>
+              <article class="screen-card">
+                <p class="screen-label">Tasks & follow-up</p>
+                <div class="screen-mock list-mock">
+                  <div class="mock-line"></div>
+                  <div class="mock-line short"></div>
+                  <div class="mock-line"></div>
+                  <div class="mock-line medium"></div>
+                </div>
+              </article>
+              <article class="screen-card">
+                <p class="screen-label">Revenue insights</p>
+                <div class="screen-mock donut-mock">
+                  <div class="donut"></div>
+                  <div class="mock-line medium"></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel feature-panel">
+            <h2>Everything your productivity team needs</h2>
+            <div class="feature-grid">
+              <article class="feature-item">
+                <h3>Unified workspace</h3>
+                <p class="muted">Manage leads, activities, and handoff updates in one shared space.</p>
+              </article>
+              <article class="feature-item">
+                <h3>Fast automation</h3>
+                <p class="muted">Capture requests instantly and route them to the right ambassador flow.</p>
+              </article>
+              <article class="feature-item">
+                <h3>Transparent metrics</h3>
+                <p class="muted">Get clear snapshots of conversion, pipeline velocity, and payout status.</p>
+              </article>
+            </div>
+          </section>
+
           <section id="be-om-pris" class="panel contact-section">
             <div class="contact-intro">
-              <h2>Request a quote for an animation film</h2>
-              <p>Share a few details and our team will send you a no-obligation quote.</p>
+              <h2>Get a custom onboarding plan</h2>
+              <p>Share your goals and we will map out the best TrustAi setup for your team.</p>
             </div>
 
             <form id="priceForm" class="contact-form">
@@ -93,22 +159,22 @@
           </section>
 
           <section class="panel">
-            <h2>How can ambassadors earn with this system?</h2>
+            <h2>Predictable outcomes from a focused system</h2>
             <p>
-              Typical packages range from <strong>NOK 40,000 to NOK 200,000</strong>. With <strong>4–10 sales per month</strong>,
-              an active ambassador can build a stable monthly income stream.
+              Teams running TrustAi typically handle <strong>40k–200k NOK projects</strong>. With better lead tracking and
+              faster follow-up, ambassadors can create a stable monthly revenue stream.
             </p>
             <div class="grid">
               <article class="kpi-card">
-                <p class="muted">Package value</p>
+                <p class="muted">Deal size</p>
                 <p class="kpi">40k–200k</p>
               </article>
               <article class="kpi-card">
-                <p class="muted">Sales / month</p>
+                <p class="muted">Closed deals / month</p>
                 <p class="kpi">4–10</p>
               </article>
               <article class="kpi-card">
-                <p class="muted">Potential turnover / month</p>
+                <p class="muted">Pipeline value / month</p>
                 <p class="kpi">160k–2M</p>
               </article>
             </div>
@@ -124,11 +190,15 @@
             <h2>FAQ</h2>
             <div class="faq-list">
               <details>
-                <summary>Do I need technical experience to use TrustAi Leads?</summary>
+                <summary>Do I need technical experience to use TrustAi?</summary>
                 <p>No. The platform is designed to be simple, with clear dashboards and guided flows.</p>
               </details>
               <details>
-                <summary>Which sign-in option should I choose?</summary>
+                <summary>Can I bring my existing ambassador process?</summary>
+                <p>Yes. We adapt onboarding and payout rules to match your current operating model.</p>
+              </details>
+              <details>
+                <summary>Which sign-in option should I choose first?</summary>
                 <p>Google is fastest, but you can also create an account with email during onboarding.</p>
               </details>
               <details>
