@@ -1,6 +1,6 @@
-# Animer
+# TrustAi
 
-Digital plattform for ambassadørdrevet lead-generering, salgspipeline og provisjonshåndtering for Animer.no.
+Digital plattform for ambassadørdrevet lead-generering, salgspipeline og provisjonshåndtering for TrustAi.no.
 
 ## Systemflyt (MVP)
 
@@ -19,7 +19,7 @@ Denne feilen betyr at domenet brukeren logger inn fra ikke er whitelistet i Fire
 3. Legg til domenet som brukes i produksjon, f.eks.:
    - `setai.no`
    - (ev.) `www.setai.no`
-4. Hvis appen ligger på en undermappe (`/animer/2/`), trenger du fortsatt bare domenet (ikke hele URL-en).
+4. Hvis appen ligger på en undermappe (`/trustai/2/`), trenger du fortsatt bare domenet (ikke hele URL-en).
 5. Lagre, deploy på nytt ved behov, og test innlogging igjen.
 
 ### Ekstra sjekk
@@ -31,7 +31,7 @@ Denne feilen betyr at domenet brukeren logger inn fra ikke er whitelistet i Fire
 
 Hvis popup/redirect stopper på en URL som:
 
-`https://animer-ambassador-mvp.firebaseapp.com/__/auth/handler?...`
+`https://trustai-ambassador-mvp.firebaseapp.com/__/auth/handler?...`
 
 og viser **"The requested action is invalid"**, er det vanligvis en konfigurasjonsmismatch i Firebase Auth-flyten.
 
@@ -40,7 +40,7 @@ og viser **"The requested action is invalid"**, er det vanligvis en konfigurasjo
 1. **`apiKey` og `authDomain` tilhører ikke samme Firebase-prosjekt**
    - I denne koden skal disse høre sammen:
      - `apiKey: AIzaSyBERElRl3D5EHzKme6to5w2nTZFAFb8ySQ`
-     - `authDomain: animer-ambassador-mvp.firebaseapp.com`
+     - `authDomain: trustai-ambassador-mvp.firebaseapp.com`
    - Hvis én av dem er byttet ut fra et annet prosjekt, vil handleren feile.
 
 2. **Domenet som starter login er ikke autorisert**
@@ -54,7 +54,7 @@ og viser **"The requested action is invalid"**, er det vanligvis en konfigurasjo
    - For denne flyten må minst følgende være tillatt:
      - `https://setai.no/*`
      - `https://www.setai.no/*` (hvis brukt)
-     - `https://animer-ambassador-mvp.firebaseapp.com/*`
+     - `https://trustai-ambassador-mvp.firebaseapp.com/*`
 
 4. **Google provider ikke aktivert i Firebase Auth**
    - Sjekk **Authentication → Sign-in method → Google**.
@@ -72,7 +72,7 @@ Kjør i DevTools Console på siden før du trykker "Logg inn":
 ```js
 console.log('origin', location.origin);
 console.log('host', location.host);
-console.log('firebaseAuthDomain', 'animer-ambassador-mvp.firebaseapp.com');
+console.log('firebaseAuthDomain', 'trustai-ambassador-mvp.firebaseapp.com');
 ```
 
 Hvis `origin` ikke matcher et domene som er autorisert i Firebase, vil login-flyten feile i handler-steget.
@@ -115,7 +115,7 @@ firebase auth:import users.json --hash-algo=HMAC_SHA256 --rounds=8 --mem-cost=14
 Løsningen støtter to hovedroller:
 
 - **Ambassadør**: Deler unik lenke, skaper trafikk/leads, følger pipeline og inntekt.
-- **Super Admin (Animer)**: Godkjenner ambassadører, følger opp leads, styrer provisjoner, utbetalinger og support.
+- **Super Admin (TrustAi)**: Godkjenner ambassadører, følger opp leads, styrer provisjoner, utbetalinger og support.
 
 ---
 

@@ -36,23 +36,23 @@ const REFERRAL_COOKIE_KEY = 'ref';
 const DEFAULT_COMMISSION_RATE = 0.1;
 
 const DEMO_ADMIN_USERNAME = 'SuperAdmin';
-const DEMO_ADMIN_PASSWORD = 'Animer';
+const DEMO_ADMIN_PASSWORD = 'TrustAi';
 const DEMO_ADMIN_SESSION_KEY = 'isDemoAdmin';
 
 const DEMO_ADMIN_PROFILE = {
   id: 'demo-superadmin',
   fullName: 'SuperAdmin',
-  email: 'superadmin@demo.animer',
+  email: 'superadmin@demo.trustai',
   phone: '+47 99 99 99 99',
   provider: 'Demo credentials',
   avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=SuperAdmin',
-  company: 'Animer Demo'
+  company: 'TrustAi Demo'
 };
 
 const DEMO_ADMIN_AMBASSADORS = [
-  { id: 'amb-nora', name: 'Nora Hansen', email: 'nora@animer.no', commissionRate: 0.12, referralCode: 'ambnora', status: 'Active', createdAt: '2026-01-04T08:20:00.000Z' },
-  { id: 'amb-jonas', name: 'Jonas Berg', email: 'jonas@animer.no', commissionRate: 0.1, referralCode: 'ambjonas', status: 'Active', createdAt: '2026-01-03T10:05:00.000Z' },
-  { id: 'amb-sara', name: 'Sara Eide', email: 'sara@animer.no', commissionRate: 0.08, referralCode: 'ambsara', status: 'Pending', createdAt: '2026-01-02T07:30:00.000Z' }
+  { id: 'amb-nora', name: 'Nora Hansen', email: 'nora@trustai.no', commissionRate: 0.12, referralCode: 'ambnora', status: 'Active', createdAt: '2026-01-04T08:20:00.000Z' },
+  { id: 'amb-jonas', name: 'Jonas Berg', email: 'jonas@trustai.no', commissionRate: 0.1, referralCode: 'ambjonas', status: 'Active', createdAt: '2026-01-03T10:05:00.000Z' },
+  { id: 'amb-sara', name: 'Sara Eide', email: 'sara@trustai.no', commissionRate: 0.08, referralCode: 'ambsara', status: 'Pending', createdAt: '2026-01-02T07:30:00.000Z' }
 ];
 
 const DEMO_ADMIN_LEADS = [
@@ -165,8 +165,8 @@ function seedDemoAdminContent() {
   demoDb.payouts = DEMO_ADMIN_PAYOUTS.map((item) => ({ ...item }));
   if (!Array.isArray(demoDb.shareTexts) || demoDb.shareTexts.length === 0) {
     demoDb.shareTexts = [
-      { id: 'share-1', source: 'Linkedin post', title: 'Sjekk ut Animer', text: 'Jeg anbefaler Animer sitt ambassadørprogram.', traffic: 156, conversions: 11 },
-      { id: 'share-2', source: 'Epost', title: 'Anbefaler Animer', text: 'Hei! Vi bruker Animer for å skape flere leads.', traffic: 72, conversions: 7 }
+      { id: 'share-1', source: 'Linkedin post', title: 'Sjekk ut TrustAi', text: 'Jeg anbefaler TrustAi sitt ambassadørprogram.', traffic: 156, conversions: 11 },
+      { id: 'share-2', source: 'Epost', title: 'Anbefaler TrustAi', text: 'Hei! Vi bruker TrustAi for å skape flere leads.', traffic: 72, conversions: 7 }
     ];
   }
   if (!Array.isArray(demoDb.tickets) || demoDb.tickets.length === 0) {
@@ -177,8 +177,8 @@ function seedDemoAdminContent() {
   }
   if (!Array.isArray(demoDb.adminUsers) || demoDb.adminUsers.length === 0) {
     demoDb.adminUsers = [
-      { id: 'u-1', name: 'Tor Martin Olsen', role: 'Super admin', email: 'tor@animer.no', phone: '+47 90 11 22 33' },
-      { id: 'u-2', name: 'Marthe Strøm', role: 'Regnskap', email: 'marthe@animer.no', phone: '+47 90 44 55 66' }
+      { id: 'u-1', name: 'Tor Martin Olsen', role: 'Super admin', email: 'tor@trustai.no', phone: '+47 90 11 22 33' },
+      { id: 'u-2', name: 'Marthe Strøm', role: 'Regnskap', email: 'marthe@trustai.no', phone: '+47 90 44 55 66' }
     ];
   }
 }
@@ -482,7 +482,7 @@ function initNavbar() {
 
 function setBrandLogo() {
   document.querySelectorAll('.brand').forEach((brand) => {
-    brand.innerHTML = '<img src="https://lirp.cdn-website.com/9ac63216/dms3rep/multi/opt/AnimerLogo.webp-140w.png" alt="Animer logo" class="brand-logo" />';
+    brand.innerHTML = '<img src="https://lirp.cdn-website.com/9ac63216/dms3rep/multi/opt/TrustAiLogo.webp-140w.png" alt="TrustAi logo" class="brand-logo" />';
   });
 }
 
@@ -1142,7 +1142,7 @@ function initShareFlow() {
   document.querySelector('#saveShareModal')?.addEventListener('click', () => {
     const platform = ambassadorState.selectedSharePlatform;
     if (!platform) return;
-    const text = encodeURIComponent(String(textInput?.value || 'Sjekk Animer!'));
+    const text = encodeURIComponent(String(textInput?.value || 'Sjekk TrustAi!'));
     const target = encodeURIComponent(getAmbassadorReferralLink(resolveCurrentAmbassadorId()));
     const map = {
       LinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${target}`,

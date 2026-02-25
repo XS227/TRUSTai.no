@@ -25,7 +25,7 @@ const PAYOUT_STATUS = {
   FAILED: 'FAILED',
 };
 
-const DEFAULT_ADMIN_ALERT_EMAILS = ['admin@animer.no'];
+const DEFAULT_ADMIN_ALERT_EMAILS = ['admin@trustai.no'];
 
 function getAdminAlertRecipients() {
   const raw = process.env.ADMIN_ALERT_EMAILS || '';
@@ -231,7 +231,7 @@ exports.bindLeadCommissionAndNotifyAdmin = onDocumentCreated('leads/{leadId}', a
     message: {
       subject: `Ny lead registrert (${company})`,
       text: [
-        'En ny lead er registrert i Animer.',
+        'En ny lead er registrert i TrustAi.',
         `Lead-ID: ${leadId}`,
         `CommissionCase: ${commissionCaseId}`,
         `Firma: ${company}`,

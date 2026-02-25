@@ -1,4 +1,4 @@
-# MVP-lanseringsplan for Animer (flat modell)
+# MVP-lanseringsplan for TrustAi (flat modell)
 
 ## Fase 0 – Datagrunnlag (uke 1)
 - Etabler de 6 collectionene: `ambassadors`, `leads`, `payouts`, `tickets`, `content`, `settings`.
@@ -9,7 +9,7 @@
 
 ## Fase 1 – Kjerneflyt (uke 2)
 - Ambassadør-onboarding i `ambassadors`.
-- Referral-lenke `animer.no/a/{referralCode}`.
+- Referral-lenke `trustai.no/a/{referralCode}`.
 - Cookie-basert attribution til lead.
 - Lead-pipeline: `open -> meeting_booked -> offer_sent -> approved/rejected`.
 

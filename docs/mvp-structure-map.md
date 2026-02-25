@@ -1,4 +1,4 @@
-# Animer MVP Structure Map
+# TrustAi MVP Structure Map
 
 Denne mappen beskriver hvordan MVP-en er strukturert, hvilke lag som eier hva, og hvordan data flyter mellom klient, Firestore, Cloud Functions og admin-operasjoner.
 
