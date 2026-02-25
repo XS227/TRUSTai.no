@@ -528,3 +528,7 @@ python3 -m http.server 8000
 - Cloud Functions for automatisk provisjonering og økonomiflyt: `functions/src/index.js`
 - Økonomilogikk (tilgjengelig / utbetalt / historikk): `docs/commission-economy-logic.md`
 - MVP-lanseringsplan: `docs/mvp-launch-plan.md`
+
+## TrustAI multi-tenant neste steg
+
+Se `docs/trustai-multitenant-next-step.md` for konkrete security rules, Cloud Functions API-pseudokode og SDK-struktur for ekstern tracking.
