@@ -35,17 +35,17 @@ const authMessage = document.querySelector('#authMessage');
 const REFERRAL_COOKIE_KEY = 'ref';
 const DEFAULT_COMMISSION_RATE = 0.1;
 
-const DEMO_ADMIN_USERNAME = 'SuperAdmin';
-const DEMO_ADMIN_PASSWORD = 'TrustAi';
+const DEMO_ADMIN_USERNAME = 'Super';
+const DEMO_ADMIN_PASSWORD = 'Admin';
 const DEMO_ADMIN_SESSION_KEY = 'isDemoAdmin';
 
 const DEMO_ADMIN_PROFILE = {
   id: 'demo-superadmin',
-  fullName: 'SuperAdmin',
+  fullName: 'Super',
   email: 'superadmin@demo.trustai',
   phone: '+47 99 99 99 99',
   provider: 'Demo credentials',
-  avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=SuperAdmin',
+  avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=Super',
   company: 'TrustAi Demo'
 };
 
@@ -73,10 +73,10 @@ const TRANSLATIONS = {
     authOut: 'Logg ut',
     google: 'Fortsett med Google',
     fb: 'Fortsett med Facebook',
-    navLogin: 'Login / Onboarding',
-    navAmbassador: 'Ambassador dashboard',
+    navLogin: 'Innlogging / Onboarding',
+    navAmbassador: 'Ambassadør-dashboard',
     navAdmin: 'Superadmin panel',
-    navProfile: 'My profile',
+    navProfile: 'Min profil',
     navPayout: 'Utbetalinger',
     navFlow: 'System flow'
   },
@@ -181,6 +181,12 @@ function seedDemoAdminContent() {
       { id: 'u-2', name: 'Marthe Strøm', role: 'Regnskap', email: 'marthe@trustai.no', phone: '+47 90 44 55 66' }
     ];
   }
+  if (!Array.isArray(demoDb.faqItems) || demoDb.faqItems.length === 0) {
+    demoDb.faqItems = [
+      { id: 'faq-1', category: 'Utbetaling', question: 'Når får jeg utbetalt provisjon?', answer: 'Utbetaling skjer når faktura er godkjent og markert som utbetalt av admin.' },
+      { id: 'faq-2', category: 'Leads', question: 'Hvordan registrerer jeg nye leads?', answer: 'Bruk skjemaet i ambassadørpanelet eller delingslenken din for automatisk attribution.' }
+    ];
+  }
 }
 
 function activateDemoAdminSession() {
@@ -260,7 +266,7 @@ function getCurrentLang() {
   const fromQuery = new URLSearchParams(window.location.search).get('lang');
   if (fromQuery === 'en' || fromQuery === 'nb') return fromQuery;
   const stored = localStorage.getItem('lang');
-  return stored === 'nb' ? 'nb' : 'en';
+  return stored === 'en' ? 'en' : 'nb';
 }
 
 function setLang(lang) {
@@ -782,10 +788,19 @@ function renderDashboardCards() {
     .map((lead)=>`<li><strong>${lead.company}</strong> · ${getAdminStatusLabel(lead.status)}</li>`).join('') || '<li class="muted">Ingen leads ennå.</li>';
   document.querySelector('#ambassadorApplicationsList').innerHTML = demoDb.ambassadors.filter((a)=>a.status==='Pending')
     .map((a)=>`<li><strong>${a.name}</strong> · ${a.email}</li>`).join('') || '<li class="muted">Ingen nye søknader.</li>';
+  const newTickets = demoDb.tickets?.filter((t) => t.status === 'ubesvart').length || 0;
+  const pendingInvoices = demoDb.payouts.filter((p) => p.status !== 'paid').length;
+  const ambassadorApplications = demoDb.ambassadors.filter((a) => a.status === 'Pending').length;
+  const newLeads = demoDb.leads.filter((lead) => normalizeLeadStatus(lead.status) === 'open').length;
+
   document.querySelector('#adminActivityList').innerHTML = `
-    <li>Nye tickets: ${demoDb.tickets?.filter((t) => t.status === 'ubesvart').length || 0}</li>
-    <li>Fakturaer til godkjenning: ${demoDb.payouts.filter((p) => p.status !== 'paid').length}</li>
-    <li>Nye ambassadør-søknader: ${demoDb.ambassadors.filter((a) => a.status === 'Pending').length}</li>`;
+    <li>Nye tickets: ${newTickets}</li>
+    <li>Fakturaer til godkjenning: ${pendingInvoices}</li>
+    <li>Nye ambassadør-søknader: ${ambassadorApplications}</li>`;
+  document.querySelector('#notifTickets')?.replaceChildren(document.createTextNode(String(newTickets)));
+  document.querySelector('#notifInvoices')?.replaceChildren(document.createTextNode(String(pendingInvoices)));
+  document.querySelector('#notifAmbassadorApplications')?.replaceChildren(document.createTextNode(String(ambassadorApplications)));
+  document.querySelector('#notifNewLeads')?.replaceChildren(document.createTextNode(String(newLeads)));
 }
 
 function renderLeadDetailPanel() {
@@ -897,6 +912,7 @@ function renderAdmin() {
       return `<tr><td>${ticket.id}</td><td>${ambassador?.name || ticket.ambassadorId}</td><td>${ticket.subject}</td><td>${ticket.status}</td><td><button class="btn-secondary open-ticket-detail" data-id="${ticket.id}">Mer</button></td></tr>`;
     }).join('');
   document.querySelector('#adminUsersBody').innerHTML = (demoDb.adminUsers || []).map((user) => `<tr><td>${user.name}<br/><span class="muted">${user.email}</span></td><td>${user.role}</td><td><button class="btn-secondary">Endre</button></td></tr>`).join('');
+  document.querySelector('#faqBody').innerHTML = (demoDb.faqItems || []).map((item) => `<tr><td>${item.category}</td><td>${item.question}</td><td>${item.answer}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Ingen FAQ registrert.</td></tr>';
 
   renderLeadDetailPanel();
   renderTicketDetailPanel();
@@ -1037,6 +1053,14 @@ function initAdminPage() {
     const title = prompt('Tittel for delingstekst');
     if (!title) return;
     demoDb.shareTexts.push({ id: `share-${Date.now()}`, source: 'Annet', title, text: 'Ny tekst', traffic: 0, conversions: 0 });
+    renderAdmin();
+  });
+  document.querySelector('#addFaqBtn')?.addEventListener('click', () => {
+    const category = prompt('Kategori');
+    const question = prompt('Spørsmål/Emne');
+    const answer = prompt('Svartekst');
+    if (!category || !question || !answer) return;
+    demoDb.faqItems.push({ id: `faq-${Date.now()}`, category, question, answer });
     renderAdmin();
   });
 

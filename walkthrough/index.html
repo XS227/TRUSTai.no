@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="nb">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TrustAi | Landing</title>
+    <title>TrustAi | Landingsside</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,10 +11,10 @@
       <aside class="sidebar">
         <div class="brand">TrustAi</div>
         <nav class="main-nav">
-          <a href="index.html" class="active" data-i18n="navLogin">Login / Onboarding</a>
-          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassador dashboard</a>
+          <a href="index.html" class="active" data-i18n="navLogin">Innlogging / Onboarding</a>
+          <a href="ambassador.html" class="auth-only" data-i18n="navAmbassador">Ambassadør-dashboard</a>
           <a href="admin.html" class="auth-only" data-i18n="navAdmin">Superadmin panel</a>
-          <a href="profile.html" class="auth-only" data-i18n="navProfile">My profile</a>
+          <a href="profile.html" class="auth-only" data-i18n="navProfile">Min profil</a>
           <a href="flow-system.html" class="auth-only" data-i18n="navFlow">System flow</a>
         </nav>
       </aside>
@@ -55,7 +55,7 @@
               <h3>Create your workspace</h3>
               <p class="muted">Get started in under two minutes with your existing account.</p>
               <div class="form-grid">
-                <button id="loginGoogle" class="btn-primary">Continue with Google</button>
+                <button id="loginGoogle" class="btn-primary">Fortsett med Google</button>
                 <form id="registerForm" class="form-grid premium-form">
                   <label>Full name<input name="fullName" placeholder="E.g. Nora Hansen" required /></label>
                   <label>Email<input name="email" type="email" placeholder="name@company.com" required /></label>
@@ -135,23 +135,23 @@
             </div>
 
             <form id="priceForm" class="contact-form">
-              <input type="text" id="companyName" placeholder="Company name" required />
-              <input type="text" id="contactName" placeholder="Contact person" required />
-              <input type="email" id="email" placeholder="Email" required />
-              <input type="tel" id="phone" placeholder="Phone" />
+              <input type="text" id="companyName" placeholder="Firmanavn" required />
+              <input type="text" id="contactName" placeholder="Kontaktperson" required />
+              <input type="email" id="email" placeholder="E-post" required />
+              <input type="tel" id="phone" placeholder="Telefon" />
 
               <select id="filmType">
-                <option value="">What is the film for?</option>
-                <option value="advertising">Advertising</option>
-                <option value="training">Training</option>
-                <option value="explainer">Explainer video</option>
-                <option value="other">Other</option>
+                <option value="">Hva skal filmen brukes til?</option>
+                <option value="advertising">Reklame</option>
+                <option value="training">Opplæring</option>
+                <option value="explainer">Forklaringsvideo</option>
+                <option value="other">Annet</option>
               </select>
 
-              <textarea id="description" placeholder="Short project description..." rows="4"></textarea>
+              <textarea id="description" placeholder="Kort prosjektbeskrivelse..." rows="4"></textarea>
 
               <button type="submit" class="btn-primary contact-submit">
-                Send request
+                Send forespørsel
               </button>
 
               <p id="formMessage" class="muted"></p>
@@ -202,8 +202,8 @@
                 <p>Google is fastest, but you can also create an account with email during onboarding.</p>
               </details>
               <details>
-                <summary>What happens after sign-in?</summary>
-                <p>Demo content is hidden, and you are sent directly to your ambassador dashboard.</p>
+                <summary>Hva skjer etter innlogging?</summary>
+                <p>Demo-innhold skjules, og du sendes direkte til ambassadør-dashboardet.</p>
               </details>
             </div>
           </section>
@@ -214,14 +214,14 @@
 
     <div id="demoAdminModal" class="modal-backdrop">
       <div class="modal">
-        <h2>Demo superadmin for investor presentation</h2>
-        <p class="muted">Sign in with demo credentials to view the Superadmin setup.</p>
+        <h2>Demo-superadmin for investorpresentasjon</h2>
+        <p class="muted">Logg inn med demo-bruker for å se superadmin-oppsettet.</p>
         <form id="demoAdminLoginForm" class="form-grid">
-          <label>Username<input name="username" autocomplete="username" required /></label>
-          <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
+          <label>Brukernavn<input name="username" autocomplete="username" required /></label>
+          <label>Passord<input name="password" type="password" autocomplete="current-password" required /></label>
           <div class="row-actions">
-            <button type="button" id="closeDemoAdminModal" class="btn-secondary">Close</button>
-            <button type="submit" class="btn-primary">Sign in as demo superadmin</button>
+            <button type="button" id="closeDemoAdminModal" class="btn-secondary">Lukk</button>
+            <button type="submit" class="btn-primary">Logg inn som demo-superadmin</button>
           </div>
           <p id="demoAdminMessage" class="muted" aria-live="polite"></p>
         </form>
@@ -255,7 +255,7 @@
         e.preventDefault();
 
         const messageBox = document.getElementById("formMessage");
-        messageBox.textContent = "Sending...";
+        messageBox.textContent = "Sender...";
 
         try {
           const ambassadorId = getCookie("ambassadorRef");
@@ -281,7 +281,7 @@
           });
 
           messageBox.style.color = "green";
-          messageBox.textContent = "Thanks! We will contact you shortly.";
+          messageBox.textContent = "Takk! Vi kontakter deg snart.";
 
           document.getElementById("priceForm").reset();
 
