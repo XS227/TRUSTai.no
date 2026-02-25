@@ -3,12 +3,13 @@ import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup } from
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
-  apiKey: 'DIN_API_KEY',
-  authDomain: 'DIN_AUTH_DOMAIN',
-  projectId: 'DIN_PROJECT_ID',
-  storageBucket: 'DIN_STORAGE_BUCKET',
-  messagingSenderId: 'DIN_SENDER_ID',
-  appId: 'DIN_APP_ID'
+  apiKey: 'AIzaSyA9ESuWhXXsevI47cY_A0YijhAawC7s0Zs',
+  authDomain: 'trustai-4dc55.firebaseapp.com',
+  projectId: 'trustai-4dc55',
+  storageBucket: 'trustai-4dc55.firebasestorage.app',
+  messagingSenderId: '886529188680',
+  appId: '1:886529188680:web:f8008930a08db98fba497d',
+  measurementId: 'G-CL1RB3P1CC'
 };
 
 function hasValidFirebaseConfig(config) {
