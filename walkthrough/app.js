@@ -35,17 +35,17 @@ const authMessage = document.querySelector('#authMessage');
 const REFERRAL_COOKIE_KEY = 'ref';
 const DEFAULT_COMMISSION_RATE = 0.1;
 
-const DEMO_ADMIN_USERNAME = 'SuperAdmin';
-const DEMO_ADMIN_PASSWORD = 'TrustAi';
+const DEMO_ADMIN_USERNAME = 'Super';
+const DEMO_ADMIN_PASSWORD = 'Admin';
 const DEMO_ADMIN_SESSION_KEY = 'isDemoAdmin';
 
 const DEMO_ADMIN_PROFILE = {
   id: 'demo-superadmin',
-  fullName: 'SuperAdmin',
+  fullName: 'Super',
   email: 'superadmin@demo.trustai',
   phone: '+47 99 99 99 99',
   provider: 'Demo credentials',
-  avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=SuperAdmin',
+  avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=Super',
   company: 'TrustAi Demo'
 };
 
