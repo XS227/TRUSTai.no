@@ -19,12 +19,13 @@ import { getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAut
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBERElRl3D5EHzKme6to5w2nTZFAFb8ySQ',
-  authDomain: 'animer-ambassador-mvp.firebaseapp.com',
-  projectId: 'animer-ambassador-mvp',
-  storageBucket: 'animer-ambassador-mvp.firebasestorage.app',
-  messagingSenderId: '793382601384',
-  appId: '1:793382601384:web:539e5516ac484f9dc6789d'
+  apiKey: 'AIzaSyA9ESuWhXXsevI47cY_A0YijhAawC7s0Zs',
+  authDomain: 'trustai-4dc55.firebaseapp.com',
+  projectId: 'trustai-4dc55',
+  storageBucket: 'trustai-4dc55.firebasestorage.app',
+  messagingSenderId: '886529188680',
+  appId: '1:886529188680:web:f8008930a08db98fba497d',
+  measurementId: 'G-CL1RB3P1CC'
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
