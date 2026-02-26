@@ -67,20 +67,26 @@ export function initFirebaseAuth() {
       const result = await signInWithPopup(auth, provider);
       const { user } = result;
 
-      const userRef = doc(db, 'ambassadors', user.uid);
+      const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          name: user.displayName,
+        await setDoc(doc(db, 'users', user.uid), {
           email: user.email,
-          status: 'pending',
-          commission_total: 0,
-          created_at: serverTimestamp()
+          role: 'ambassador',
+          createdAt: serverTimestamp()
         });
-      }
 
-      authMessage.textContent = `Innlogget som ${user.displayName}`;
+        window.location.href = '/ambassador.html';
+      } else {
+        const role = userSnap.data().role;
+
+        if (role === 'superadmin') {
+          window.location.href = '/admin.html';
+        } else {
+          window.location.href = '/ambassador.html';
+        }
+      }
     } catch (error) {
       authMessage.textContent = getFriendlyAuthError(error);
     }
