@@ -226,7 +226,7 @@ exports.bindLeadCommissionAndNotifyAdmin = onDocumentCreated('leads/{leadId}', a
   const contact = String(lead.name || lead.contactName || 'Ukjent kontakt');
   const contactEmail = String(lead.email || 'ikke oppgitt');
 
-  await db.collection('mail').add({
+  const mailPayload = {
     to: recipients,
     message: {
       subject: `Ny lead registrert (${company})`,
@@ -250,7 +250,25 @@ exports.bindLeadCommissionAndNotifyAdmin = onDocumentCreated('leads/{leadId}', a
       `,
     },
     createdAt: FieldValue.serverTimestamp(),
-  });
+  };
+
+  try {
+    await db.collection('mail').add(mailPayload);
+  } catch (error) {
+    logger.error('Kunne ikke legge melding i mail-kø.', {
+      leadId,
+      recipients,
+      error: error?.message || String(error),
+    });
+    await db.collection('notifications').add({
+      channel: 'email',
+      status: 'FAILED',
+      leadId,
+      payload: mailPayload,
+      error: error?.message || String(error),
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  }
 
   logger.info('Lead auto-bound to commission and admin notification queued', {
     leadId,
