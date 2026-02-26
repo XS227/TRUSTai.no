@@ -10,6 +10,7 @@ import {
   normalizeLeadStatus,
   subscribeToAmbassadorsInStore,
   subscribeToLeadsInStore,
+  subscribeToUsersInStore,
   updateLeadInStore
 } from './data-store.js';
 import { initAmbassadorCharts, refreshAmbassadorCharts, setAmbassadorChartData } from './charts/index.js';
@@ -107,6 +108,8 @@ const adminState = {
   selectedAmbassadorId: null,
   selectedTicketId: null
 };
+
+const authUsers = [];
 const ADMIN_LEAD_STATUS_LABELS = {
   open: 'Åpent',
   meeting_booked: 'Møte',
@@ -923,6 +926,33 @@ function ensureLeadMeta(lead) {
   if (!lead.offerValue) lead.offerValue = Number(lead.offerAmount || lead.dealValue || 0);
 }
 
+function getAdminUsersRows() {
+  if (isDemoAdminSession()) {
+    return (demoDb.adminUsers || []).map((user) => ({
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }));
+  }
+
+  const ambassadorById = new Map(demoDb.ambassadors.map((ambassador) => [ambassador.id, ambassador]));
+  const rows = authUsers.map((user) => {
+    const uid = String(user.uid || user.id || '');
+    const ambassador = ambassadorById.get(uid);
+    const firestoreRole = String(user.role || '').trim();
+    const role = firestoreRole || (ambassador ? 'Ambassadør' : 'Ikke godkjent');
+    const approval = ambassador ? `Godkjent (${getAdminAmbassadorStatusLabel(ambassador.status)})` : 'Mangler ambassadørdokument';
+
+    return {
+      name: user.name || user.displayName || user.email || uid || 'Ukjent bruker',
+      email: user.email || '—',
+      role: `${role} · ${approval}`
+    };
+  });
+
+  return rows.sort((a, b) => a.name.localeCompare(b.name, 'nb'));
+}
+
 function renderDashboardCards() {
   const totals = demoDb.leads.reduce((acc, lead) => {
     const status = normalizeLeadStatus(lead.status);
@@ -1088,7 +1118,7 @@ function renderAdmin() {
       const ambassador = demoDb.ambassadors.find((item) => item.id === ticket.ambassadorId);
       return `<tr><td>${ticket.id}</td><td>${ambassador?.name || ticket.ambassadorId}</td><td>${ticket.subject}</td><td>${ticket.status}</td><td><button class="btn-secondary open-ticket-detail" data-id="${ticket.id}">Mer</button></td></tr>`;
     }).join('');
-  document.querySelector('#adminUsersBody').innerHTML = (demoDb.adminUsers || []).map((user) => `<tr><td>${user.name}<br/><span class="muted">${user.email}</span></td><td>${user.role}</td><td><button class="btn-secondary">Endre</button></td></tr>`).join('');
+  document.querySelector('#adminUsersBody').innerHTML = getAdminUsersRows().map((user) => `<tr><td>${user.name}<br/><span class="muted">${user.email}</span></td><td>${user.role}</td><td><button class="btn-secondary">Endre</button></td></tr>`).join('');
   document.querySelector('#faqBody').innerHTML = (demoDb.faqItems || []).map((item) => `<tr><td>${item.category}</td><td>${item.question}</td><td>${item.answer}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Ingen FAQ registrert.</td></tr>';
 
   renderLeadDetailPanel();
@@ -1595,6 +1625,13 @@ function subscribeToFirestoreAmbassadors() {
   });
 }
 
+function subscribeToFirestoreUsers() {
+  subscribeToUsersInStore(db, (users) => {
+    authUsers.splice(0, authUsers.length, ...users);
+    renderAdmin();
+  });
+}
+
 captureReferral();
 trackReferralFromUrl();
 handleRedirectLoginResult();
@@ -1619,6 +1656,7 @@ initAmbassadorCharts();
 if (!isDemoAdminSession()) {
   subscribeToFirestoreLeads();
   subscribeToFirestoreAmbassadors();
+  subscribeToFirestoreUsers();
 }
 
 document.querySelector('#loginGoogle')?.addEventListener('click', window.loginWithGoogle);

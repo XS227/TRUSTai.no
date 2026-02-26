@@ -21,6 +21,17 @@ export const demoDb = {
   socialShares: []
 };
 
+export function subscribeToUsersInStore(db, callback) {
+  const usersQuery = query(collection(db, 'users'));
+  return onSnapshot(usersQuery, (snapshot) => {
+    const users = snapshot.docs.map((docSnapshot) => ({
+      id: docSnapshot.id,
+      ...docSnapshot.data()
+    }));
+    callback(users);
+  });
+}
+
 export function normalizeLeadStatus(status) {
   const normalized = String(status || '').trim().toLowerCase();
   if (!normalized) return 'open';
