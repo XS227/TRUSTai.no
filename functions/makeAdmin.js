@@ -4,7 +4,7 @@ admin.initializeApp({
   credential: admin.credential.applicationDefault(),
 });
 
-const uid = 'zEaweky04Zd1iSZUhB5lyiUD1J92';
+const uid = 'cyGngARJUgNBxrTaFkA6EFKhfwp2';
 
 admin
   .auth()
