@@ -78,7 +78,7 @@ const TRANSLATIONS = {
     navAdmin: 'Superadmin panel',
     navProfile: 'Min profil',
     navPayout: 'Utbetalinger',
-    navFlow: 'System flow'
+    navFlow: 'Systemflyt'
   },
   en: {
     authIn: 'Log in',
@@ -90,7 +90,7 @@ const TRANSLATIONS = {
     navAdmin: 'Admin panel',
     navProfile: 'My profile',
     navPayout: 'Payouts',
-    navFlow: 'System flow'
+    navFlow: 'Systemflyt'
   }
 };
 
@@ -436,7 +436,7 @@ function initAuthStateSync() {
   onAuthStateChanged(auth, async (user) => {
     if (isDemoAdminSession() && !user) {
       activateDemoAdminSession();
-      setAuthMessage('Signed in as demo Superadmin.');
+      setAuthMessage('Innlogget som demo-superadmin.');
       return;
     }
 
@@ -450,11 +450,12 @@ function initAuthStateSync() {
     localStorage.setItem('isAdmin', String(isAdminUser));
     if (isLoggedIn) hydrateUserFromAuth(user);
     hideProtectedNavigation(isLoggedIn, isAdminUser);
+    updateSidebarVisibility(isLoggedIn);
     enforcePageAccess(isLoggedIn, isAdminUser);
     syncProfileUi();
     setLang(getCurrentLang());
     if (user?.email) {
-      setAuthMessage(`Signed in as ${user.email}.`);
+      setAuthMessage(`Innlogget som ${user.email}.`);
       redirectToAmbassadorDashboard();
     }
   });
@@ -471,6 +472,7 @@ function initAuthAction() {
   if (avatar) avatar.src = demoDb.userProfile.avatarUrl;
   if (authAction) authAction.textContent = isLoggedIn ? t.authOut : t.authIn;
   hideProtectedNavigation(isLoggedIn, isAdminUser);
+  updateSidebarVisibility(isLoggedIn);
   enforcePageAccess(isLoggedIn, isAdminUser);
 
   authAction?.addEventListener('click', () => {
@@ -481,7 +483,7 @@ function initAuthAction() {
       localStorage.setItem('isAdmin', 'false');
       authState.user = null;
       authState.isAdmin = false;
-      setAuthMessage('Demo Superadmin is signed out.');
+      setAuthMessage('Demo-superadmin er logget ut.');
       window.location.replace('index.html');
       return;
     }
@@ -491,10 +493,8 @@ function initAuthAction() {
         localStorage.setItem('isLoggedIn', 'false');
       });
       localStorage.setItem('isAdmin', 'false');
-      setAuthMessage('You are signed out.');
-      if (PROTECTED_PAGES.some((page) => window.location.pathname.endsWith(page))) {
-        window.location.replace('index.html');
-      }
+      setAuthMessage('Du er logget ut.');
+      window.location.replace('index.html');
       return;
     }
 
@@ -504,6 +504,15 @@ function initAuthAction() {
     }
     window.location.assign('index.html');
   });
+}
+
+
+function updateSidebarVisibility(isLoggedIn) {
+  const root = document.documentElement;
+  const shouldHide = !isLoggedIn;
+  root.classList.toggle('no-sidebar', shouldHide);
+  const navToggle = document.querySelector('#navToggle');
+  if (navToggle) navToggle.hidden = shouldHide;
 }
 
 function initNavbar() {
@@ -517,13 +526,15 @@ function initNavbar() {
     navToggle.setAttribute('aria-expanded', String(!collapsed));
   };
 
-  if (window.matchMedia('(max-width: 900px)').matches) {
+  const savedSidebarState = localStorage.getItem('sidebarCollapsed');
+  if (savedSidebarState === 'true' || window.matchMedia('(max-width: 900px)').matches) {
     root.classList.add('sidebar-collapsed');
   }
   setExpandedState();
 
   navToggle.addEventListener('click', () => {
     root.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('sidebarCollapsed', String(root.classList.contains('sidebar-collapsed')));
     setExpandedState();
   });
 
@@ -539,7 +550,7 @@ function initNavbar() {
 
 function setBrandLogo() {
   document.querySelectorAll('.brand').forEach((brand) => {
-    brand.innerHTML = '<img src="https://lirp.cdn-website.com/9ac63216/dms3rep/multi/opt/TrustAiLogo.webp-140w.png" alt="TrustAi logo" class="brand-logo" />';
+    brand.textContent = 'TustAi.no';
   });
 }
 
@@ -596,7 +607,7 @@ async function handleRedirectLoginResult() {
     demoDb.userProfile.fullName = result.user.displayName || demoDb.userProfile.fullName;
     demoDb.userProfile.email = result.user.email || demoDb.userProfile.email;
     demoDb.userProfile.avatarUrl = result.user.photoURL || demoDb.userProfile.avatarUrl;
-    setAuthMessage(`Signed in as ${result.user.email}`);
+    setAuthMessage(`Innlogget som ${result.user.email}`);
   } catch {
     // ignore on pages without auth flow
   }
@@ -616,7 +627,7 @@ window.loginWithGoogle = async () => {
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('isAdmin', String(adminUser));
     hideProtectedNavigation(true, adminUser);
-    setAuthMessage(`Signed in as ${result.user.email}.`);
+    setAuthMessage(`Innlogget som ${result.user.email}.`);
     syncProfileUi();
     setLang(getCurrentLang());
     window.location.assign(adminUser ? 'admin.html' : 'ambassador.html');
@@ -697,9 +708,9 @@ function initLandingPage() {
   const closeDemoAdminModal = document.querySelector('#closeDemoAdminModal');
 
   if (new URLSearchParams(window.location.search).get('blocked') === 'admin') {
-    setAuthMessage('Log in to access admin pages.');
+    setAuthMessage('Logg inn for å få tilgang til adminsider.');
   } else if (new URLSearchParams(window.location.search).get('blocked') === 'admin-role') {
-    setAuthMessage('Your account is missing an admin claim. Set a custom claim (e.g. isAdmin/admin) and sign in again.');
+    setAuthMessage('Kontoen din mangler admin-tilgang. Sett admin-claim i Firebase og logg inn på nytt.');
   }
 
   openDemoAdminModal?.addEventListener('click', () => demoAdminModal?.classList.add('open'));
@@ -715,8 +726,8 @@ function initLandingPage() {
       const lead = await createLead({ name: formData.get('name'), company: formData.get('company'), email: formData.get('email') });
       if (leadMessage) {
         leadMessage.textContent = lead.duplicate
-          ? `Lead already exists for ${lead.company}. Existing ambassador is kept.`
-          : `Lead saved: ${lead.company}`;
+          ? `Lead finnes allerede for ${lead.company}. Eksisterende ambassadør beholdes.`
+          : `Lead lagret: ${lead.company}`;
       }
       leadForm.reset();
 
@@ -724,11 +735,11 @@ function initLandingPage() {
         autoRedirectAfterSubmit({
           messageNode: leadMessage,
           target: authState.isAdmin ? 'admin.html' : 'ambassador.html',
-          message: `Lead saved: ${lead.company}. Redirecting you to the dashboard...`
+          message: `Lead lagret: ${lead.company}. Sender deg videre til dashbordet...`
         });
       }
     } catch {
-      if (leadMessage) leadMessage.textContent = 'Could not save lead.';
+      if (leadMessage) leadMessage.textContent = 'Kunne ikke lagre lead.';
     }
   });
 
@@ -739,12 +750,12 @@ function initLandingPage() {
     const password = String(formData.get('password') || '').trim();
 
     if (username !== DEMO_ADMIN_USERNAME || password !== DEMO_ADMIN_PASSWORD) {
-      if (demoAdminMessage) demoAdminMessage.textContent = 'Invalid username or password.';
+      if (demoAdminMessage) demoAdminMessage.textContent = 'Ugyldig brukernavn eller passord.';
       return;
     }
 
     activateDemoAdminSession();
-    if (demoAdminMessage) demoAdminMessage.textContent = 'Demo Superadmin activated. Redirecting to the admin panel...';
+    if (demoAdminMessage) demoAdminMessage.textContent = 'Demo-superadmin aktivert. Sender deg til adminpanelet...';
     window.location.assign('admin.html');
   });
 
@@ -1343,7 +1354,7 @@ function initProfilePage() {
     demoDb.userProfile.email = String(document.querySelector('#profileEmail')?.value || '');
     demoDb.userProfile.phone = String(document.querySelector('#profilePhone')?.value || '');
     demoDb.userProfile.company = String(document.querySelector('#profileCompany')?.value || '');
-    document.querySelector('#profileMessage').textContent = 'Profile updated.';
+    document.querySelector('#profileMessage').textContent = 'Profil oppdatert.';
     syncProfileUi();
   });
 }
@@ -1373,7 +1384,7 @@ function initInvoicePage() {
       createdAt: new Date().toISOString()
     });
     render();
-    message.textContent = 'Invoice uploaded (local MVP demo).';
+    message.textContent = 'Faktura lastet opp (lokal MVP-demo).';
     form.reset();
   });
 }

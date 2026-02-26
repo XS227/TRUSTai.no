@@ -82,6 +82,18 @@ html.sidebar-collapsed .sidebar {
   pointer-events: none;
 }
 
+html.no-sidebar .app-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html.no-sidebar .sidebar {
+  display: none;
+}
+
+html.no-sidebar .nav-toggle {
+  display: none;
+}
+
 
 .content { display: flex; flex-direction: column; min-width: 0; }
 .topbar {
