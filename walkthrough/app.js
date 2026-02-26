@@ -16,7 +16,7 @@ import { initAmbassadorCharts, refreshAmbassadorCharts, setAmbassadorChartData }
 import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
 import { createUserWithEmailAndPassword, getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
-import { doc, getDoc, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { addDoc, collection, doc, getDoc, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA9ESuWhXXsevI47cY_A0YijhAawC7s0Zs',
@@ -682,6 +682,53 @@ async function createLead({ name, company, email }) {
   return localLead;
 }
 
+async function createAmbassadorFromAdmin({ name, email, commissionPercent }) {
+  const trimmedName = String(name || '').trim();
+  const trimmedEmail = String(email || '').trim().toLowerCase();
+  const commissionRate = Math.max(0.01, Math.min(1, Number(commissionPercent || 10) / 100));
+
+  if (!trimmedName || !trimmedEmail) {
+    throw new Error('Navn og epost er påkrevd.');
+  }
+
+  const referralCode = `amb${trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || Date.now()}`;
+
+  if (isDemoAdminSession()) {
+    const localAmbassador = {
+      id: `amb-${Date.now()}`,
+      name: trimmedName,
+      email: trimmedEmail,
+      commissionRate,
+      referralCode,
+      status: 'Pending',
+      createdAt: new Date().toISOString()
+    };
+    demoDb.ambassadors.unshift(localAmbassador);
+    renderAdmin();
+    return localAmbassador;
+  }
+
+  const docRef = await addDoc(collection(db, 'ambassadors'), {
+    name: trimmedName,
+    email: trimmedEmail,
+    commissionRate,
+    referralCode,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+
+  return {
+    id: docRef.id,
+    name: trimmedName,
+    email: trimmedEmail,
+    commissionRate,
+    referralCode,
+    status: 'Pending',
+    createdAt: new Date().toISOString()
+  };
+}
+
 function autoRedirectAfterSubmit({ messageNode, target, delayMs = 1400, message }) {
   if (messageNode) {
     messageNode.textContent = message;
@@ -1070,6 +1117,8 @@ function initAdminPage() {
   const incomeAmbassadorFilter = document.querySelector('#incomeAmbassadorFilter');
   const incomeStatusFilter = document.querySelector('#incomeStatusFilter');
   const ticketStatusFilter = document.querySelector('#ticketStatusFilter');
+  const addAmbassadorForm = document.querySelector('#addAmbassadorForm');
+  const addAmbassadorMessage = document.querySelector('#addAmbassadorMessage');
 
   if (leadStatusFilter) leadStatusFilter.innerHTML = `<option value="all">Status</option>${LEAD_STATUSES.map((status) => `<option value="${status}">${getAdminStatusLabel(status)}</option>`).join('')}`;
   if (leadAmbassadorFilter) {
@@ -1098,6 +1147,23 @@ function initAdminPage() {
   incomeAmbassadorFilter?.addEventListener('change', (event) => { adminState.incomeAmbassadorFilter = event.target.value; renderAdmin(); });
   incomeStatusFilter?.addEventListener('change', (event) => { adminState.incomeStatusFilter = event.target.value; renderAdmin(); });
   ticketStatusFilter?.addEventListener('change', (event) => { adminState.ticketStatusFilter = event.target.value; renderAdmin(); });
+
+  addAmbassadorForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(addAmbassadorForm);
+    try {
+      const ambassador = await createAmbassadorFromAdmin({
+        name: formData.get('name'),
+        email: formData.get('email'),
+        commissionPercent: formData.get('commissionPercent')
+      });
+      if (addAmbassadorMessage) addAmbassadorMessage.textContent = `Ambassadør lagt til: ${ambassador.name}`;
+      addAmbassadorForm.reset();
+      renderAdmin();
+    } catch {
+      if (addAmbassadorMessage) addAmbassadorMessage.textContent = 'Kunne ikke legge til ambassadør.';
+    }
+  });
 
   leadBody.addEventListener('click', (event) => {
     const button = event.target.closest('.open-lead-detail');

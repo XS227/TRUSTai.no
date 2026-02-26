@@ -19,7 +19,7 @@ service cloud.firestore {
 
     match /ambassadors/{ambassadorId} {
       allow read: if isAdmin() || isOwner(ambassadorId);
-      allow create: if isSignedIn() && (isOwner(ambassadorId) || isAdmin());
+      allow create: if isSignedIn();
       allow update: if isAdmin() || (
         isOwner(ambassadorId) &&
         !('status' in request.resource.data.diff(resource.data).changedKeys())
@@ -28,11 +28,14 @@ service cloud.firestore {
     }
 
     match /leads/{leadId} {
-      allow create: if isSignedIn() &&
+      allow create: if
         request.resource.data.keys().hasAll(['company', 'name', 'email']) &&
         request.resource.data.company is string &&
         request.resource.data.name is string &&
-        request.resource.data.email is string;
+        request.resource.data.email is string &&
+        request.resource.data.company.size() > 0 &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.email.size() > 3;
       allow read: if isAdmin() || (isSignedIn() && resource.data.ambassadorId == request.auth.uid);
       allow update: if isAdmin();
       allow delete: if false;
