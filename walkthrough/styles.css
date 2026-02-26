@@ -654,6 +654,9 @@ body[data-theme='dark'] .premium-form {
   padding: 12vh 1rem 1rem;
   z-index: 30;
 }
+.search-modal[hidden] {
+  display: none;
+}
 .search-modal-content {
   width: min(860px, 100%);
   border: 1px solid var(--border);
