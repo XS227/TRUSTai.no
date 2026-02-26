@@ -390,7 +390,38 @@ async function isAdmin(user) {
   if (!user) return false;
   const token = await getIdTokenResult(user);
   const roles = Array.isArray(token.claims.roles) ? token.claims.roles : [];
-  return Boolean(token.claims.admin || token.claims.isAdmin || roles.includes('admin'));
+  const normalizedRoles = roles.map((role) => String(role || '').trim().toLowerCase());
+  const hasAdminClaim = Boolean(
+    token.claims.admin
+    || token.claims.isAdmin
+    || normalizedRoles.includes('admin')
+    || normalizedRoles.includes('superadmin')
+    || normalizedRoles.includes('super_admin')
+  );
+  if (hasAdminClaim) return true;
+
+  const userSnap = await getDoc(doc(db, 'users', user.uid));
+  if (!userSnap.exists()) return false;
+
+  const role = String(userSnap.data()?.role || '').trim().toLowerCase();
+  return ['admin', 'superadmin', 'super_admin', 'super admin'].includes(role);
+}
+
+async function ensureUserProfile(user) {
+  const userRef = doc(db, 'users', user.uid);
+  const userSnap = await getDoc(userRef);
+  const existingRole = String(userSnap.data()?.role || '').trim().toLowerCase();
+  const defaultRole = existingRole || 'ambassador';
+
+  await setDoc(userRef, {
+    uid: user.uid,
+    name: user.displayName || '',
+    email: user.email || '',
+    photoURL: user.photoURL || '',
+    role: defaultRole,
+    updatedAt: serverTimestamp(),
+    ...(userSnap.exists() ? {} : { createdAt: serverTimestamp() })
+  }, { merge: true });
 }
 
 function hydrateUserFromAuth(user) {
@@ -559,7 +590,9 @@ async function handleRedirectLoginResult() {
   try {
     const result = await getRedirectResult(auth);
     if (!result?.user) return;
-    await ensureAmbassadorProfile(result.user);
+    await ensureUserProfile(result.user);
+    const adminUser = await isAdmin(result.user);
+    if (!adminUser) await ensureAmbassadorProfile(result.user);
     demoDb.userProfile.fullName = result.user.displayName || demoDb.userProfile.fullName;
     demoDb.userProfile.email = result.user.email || demoDb.userProfile.email;
     demoDb.userProfile.avatarUrl = result.user.photoURL || demoDb.userProfile.avatarUrl;
@@ -573,17 +606,20 @@ window.loginWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
   try {
     const result = await signInWithPopup(auth, provider);
-    await ensureAmbassadorProfile(result.user);
+    await ensureUserProfile(result.user);
+    const adminUser = await isAdmin(result.user);
+    if (!adminUser) await ensureAmbassadorProfile(result.user);
     demoDb.userProfile.fullName = result.user.displayName || demoDb.userProfile.fullName;
     demoDb.userProfile.email = result.user.email || demoDb.userProfile.email;
     demoDb.userProfile.provider = 'Google';
     demoDb.userProfile.avatarUrl = result.user.photoURL || demoDb.userProfile.avatarUrl;
     localStorage.setItem('isLoggedIn', 'true');
-    hideProtectedNavigation(true);
+    localStorage.setItem('isAdmin', String(adminUser));
+    hideProtectedNavigation(true, adminUser);
     setAuthMessage(`Signed in as ${result.user.email}.`);
     syncProfileUi();
     setLang(getCurrentLang());
-    window.location.assign('ambassador.html');
+    window.location.assign(adminUser ? 'admin.html' : 'ambassador.html');
   } catch (error) {
     if (error?.code === 'auth/popup-blocked') {
       await signInWithRedirect(auth, provider);
@@ -754,6 +790,17 @@ function initLandingPage() {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName: fullName });
+
+      await setDoc(doc(db, 'users', result.user.uid), {
+        uid: result.user.uid,
+        name: fullName,
+        email,
+        phone,
+        role: 'ambassador',
+        provider: 'password',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
 
       await setDoc(doc(db, 'ambassadors', result.user.uid), {
         name: fullName,
