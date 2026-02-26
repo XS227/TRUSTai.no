@@ -37,30 +37,51 @@ body {
   color: var(--text);
 }
 
-.app-layout { display: grid; grid-template-columns: 1fr; min-height: 100vh; }
+.app-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
 .sidebar {
   position: sticky;
   top: 0;
-  z-index: 3;
+  z-index: 10;
+  height: 100vh;
+  overflow-y: auto;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 18px;
   background: var(--surface-strong);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 22px;
+  border-right: 1px solid var(--border);
+  padding: 18px 16px;
+  transition: transform .22s ease, opacity .22s ease;
 }
+
 .brand { font-size: 1.25rem; font-weight: 700; margin: 0; display:flex; align-items:center; }
 .brand-logo { height: 34px; width: auto; display:block; }
-.main-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.main-nav { display: flex; flex-direction: column; gap: 8px; }
 .sidebar a {
   color: var(--text);
   border: 1px solid transparent;
   background: transparent;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-radius: 12px;
   text-decoration: none;
 }
 .sidebar a:hover, .sidebar a.active { background: var(--surface-soft); border-color: var(--border); }
+
+html.sidebar-collapsed .app-layout {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+html.sidebar-collapsed .sidebar {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 
 .content { display: flex; flex-direction: column; min-width: 0; }
 .topbar {
@@ -243,22 +264,27 @@ label { display: grid; gap: 4px; color: var(--muted); font-size: .83rem; }
   .landing-hero { padding: 24px; }
   .screen-grid,
   .feature-grid { grid-template-columns: 1fr; }
+  .app-layout { grid-template-columns: 1fr; }
   .sidebar {
-    position: static;
-    padding: 10px 12px;
-    align-items: center;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 10px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(280px, 82vw);
+    max-width: 82vw;
+    box-shadow: var(--shadow);
   }
   .brand { margin-right: auto; }
   .nav-toggle { display: inline-grid; }
-  .main-nav {
-    width: 100%;
-    display: none;
-    flex-direction: column;
+  html:not(.sidebar-collapsed) .sidebar {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
   }
-  .sidebar.open .main-nav { display: flex; }
+  html.sidebar-collapsed .sidebar {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 

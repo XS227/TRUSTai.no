@@ -56,10 +56,17 @@
               <p class="muted">Get started in under two minutes with your existing account.</p>
               <div class="form-grid">
                 <button id="loginGoogle" class="btn-primary">Fortsett med Google</button>
+                <form id="emailLoginForm" class="form-grid premium-form">
+                  <label>Epost<input name="email" type="email" autocomplete="email" placeholder="name@company.com" required /></label>
+                  <label>Passord<input name="password" type="password" autocomplete="current-password" placeholder="Skriv passord" required /></label>
+                  <button class="btn-secondary" type="submit">Logg inn med epost</button>
+                  <p id="emailLoginMessage" class="muted" aria-live="polite"></p>
+                </form>
                 <form id="registerForm" class="form-grid premium-form">
                   <label>Full name<input name="fullName" placeholder="E.g. Nora Hansen" required /></label>
                   <label>Email<input name="email" type="email" placeholder="name@company.com" required /></label>
                   <label>Phone<input name="phone" placeholder="+47 ..." /></label>
+                  <label>Passord<input name="password" type="password" autocomplete="new-password" placeholder="Minst 6 tegn" required /></label>
                   <button class="btn-secondary" type="submit">Create workspace</button>
                 </form>
                 <p id="authMessage" class="muted" aria-live="polite"></p>

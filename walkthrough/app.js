@@ -15,7 +15,7 @@ import {
 import { initAmbassadorCharts, refreshAmbassadorCharts, setAmbassadorChartData } from './charts/index.js';
 import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
-import { getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+import { createUserWithEmailAndPassword, getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -479,9 +479,29 @@ function initNavbar() {
   const navToggle = document.querySelector('#navToggle');
   const sidebar = document.querySelector('.sidebar');
   if (!navToggle || !sidebar) return;
+
+  const root = document.documentElement;
+  const setExpandedState = () => {
+    const collapsed = root.classList.contains('sidebar-collapsed');
+    navToggle.setAttribute('aria-expanded', String(!collapsed));
+  };
+
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    root.classList.add('sidebar-collapsed');
+  }
+  setExpandedState();
+
   navToggle.addEventListener('click', () => {
-    const isOpen = sidebar.classList.toggle('open');
-    navToggle.setAttribute('aria-expanded', String(isOpen));
+    root.classList.toggle('sidebar-collapsed');
+    setExpandedState();
+  });
+
+  sidebar.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => {
+      if (!window.matchMedia('(max-width: 900px)').matches) return;
+      root.classList.add('sidebar-collapsed');
+      setExpandedState();
+    });
   });
 }
 
@@ -628,6 +648,8 @@ function autoRedirectAfterSubmit({ messageNode, target, delayMs = 1400, message 
 
 
 function initLandingPage() {
+  const emailLoginForm = document.querySelector('#emailLoginForm');
+  const emailLoginMessage = document.querySelector('#emailLoginMessage');
   const leadForm = document.querySelector('#leadForm');
   const leadMessage = document.querySelector('#leadMessage');
   const registerForm = document.querySelector('#registerForm');
@@ -690,29 +712,79 @@ function initLandingPage() {
     window.location.assign('admin.html');
   });
 
-  registerForm?.addEventListener('submit', (event) => {
+  emailLoginForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(emailLoginForm);
+    const email = String(formData.get('email') || '').trim();
+    const password = String(formData.get('password') || '').trim();
+
+    if (!email || !password) {
+      if (emailLoginMessage) emailLoginMessage.textContent = 'Fyll inn epost og passord.';
+      return;
+    }
+
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      authState.user = result.user;
+      authState.isAdmin = await isAdmin(result.user);
+      if (emailLoginMessage) emailLoginMessage.textContent = 'Innlogging vellykket. Sender deg videre...';
+      window.location.assign(authState.isAdmin ? 'admin.html' : 'ambassador.html');
+    } catch (error) {
+      if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password' || error?.code === 'auth/user-not-found') {
+        if (emailLoginMessage) emailLoginMessage.textContent = 'Ugyldig epost eller passord.';
+        return;
+      }
+      if (emailLoginMessage) emailLoginMessage.textContent = 'Kunne ikke logge inn. Prøv igjen.';
+    }
+  });
+
+  registerForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(registerForm);
-    demoDb.userProfile.fullName = String(formData.get('fullName') || '');
-    demoDb.userProfile.email = String(formData.get('email') || '');
-    demoDb.userProfile.phone = String(formData.get('phone') || '');
-    demoDb.userProfile.provider = 'Email';
-    autoRedirectAfterSubmit({
-      messageNode: registerMessage,
-      target: 'ambassador.html',
-      message: 'Account created locally for MVP. Redirecting...' 
-    });
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('isAdmin', 'false');
-    authState.user = {
-      uid: demoDb.userProfile.email || `amb-${Date.now()}`,
-      email: demoDb.userProfile.email,
-      displayName: demoDb.userProfile.fullName
-    };
-    authState.isAdmin = false;
-    hideProtectedNavigation(true, false);
-    syncProfileUi();
-    setLang(getCurrentLang());
+    const fullName = String(formData.get('fullName') || '').trim();
+    const email = String(formData.get('email') || '').trim();
+    const phone = String(formData.get('phone') || '').trim();
+    const password = String(formData.get('password') || '').trim();
+
+    if (!fullName || !email || !password) {
+      if (registerMessage) registerMessage.textContent = 'Navn, epost og passord er obligatorisk.';
+      return;
+    }
+
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(result.user, { displayName: fullName });
+
+      await setDoc(doc(db, 'ambassadors', result.user.uid), {
+        name: fullName,
+        email,
+        phone,
+        status: 'pending',
+        commission_total: 0,
+        created_at: serverTimestamp()
+      }, { merge: true });
+
+      demoDb.userProfile.fullName = fullName;
+      demoDb.userProfile.email = email;
+      demoDb.userProfile.phone = phone;
+      demoDb.userProfile.provider = 'Email';
+
+      autoRedirectAfterSubmit({
+        messageNode: registerMessage,
+        target: 'ambassador.html',
+        message: 'Konto opprettet. Sender deg videre...'
+      });
+    } catch (error) {
+      if (error?.code === 'auth/email-already-in-use') {
+        if (registerMessage) registerMessage.textContent = 'Denne eposten er allerede registrert. Bruk innlogging over.';
+        return;
+      }
+      if (error?.code === 'auth/weak-password') {
+        if (registerMessage) registerMessage.textContent = 'Passordet må være minst 6 tegn.';
+        return;
+      }
+      if (registerMessage) registerMessage.textContent = 'Kunne ikke opprette konto. Prøv igjen.';
+    }
   });
 }
 
