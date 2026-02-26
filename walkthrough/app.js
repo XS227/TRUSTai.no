@@ -17,7 +17,7 @@ import { initAmbassadorCharts, refreshAmbassadorCharts, setAmbassadorChartData }
 import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
 import { createUserWithEmailAndPassword, getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
-import { addDoc, collection, doc, getDoc, getFirestore, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { addDoc, collection, deleteDoc, doc, getDoc, getFirestore, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA9ESuWhXXsevI47cY_A0YijhAawC7s0Zs',
@@ -106,8 +106,10 @@ const adminState = {
   ticketStatusFilter: 'all',
   selectedLeadId: null,
   selectedAmbassadorId: null,
-  selectedTicketId: null
+  selectedTicketId: null,
+  searchTerm: ''
 };
+
 
 const authUsers = [];
 const ADMIN_LEAD_STATUS_LABELS = {
@@ -224,6 +226,10 @@ function getLeadPayoutBucket(lead) {
   if (status === 'paid' || payoutStatus === 'paid' || payoutStatus === 'locked') return 'paid';
   if (status === 'payout_requested' || payoutStatus === 'payout_requested' || payoutStatus === 'pending') return 'pending';
   return 'available';
+}
+
+function normalizeAdminStatusLabel(status) {
+  return String(status || '').trim().toLowerCase() === 'pending' ? 'Pending' : status;
 }
 
 function payoutBadgeLabel(bucket) {
@@ -835,6 +841,8 @@ function initLandingPage() {
     }
   });
 
+  renderLandingFaq();
+
   registerForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(registerForm);
@@ -896,7 +904,20 @@ function initLandingPage() {
   });
 }
 
+
+function renderLandingFaq() {
+  const faqList = document.querySelector('.faq-list');
+  if (!faqList) return;
+  if (!Array.isArray(demoDb.faqItems) || demoDb.faqItems.length === 0) return;
+  faqList.innerHTML = demoDb.faqItems.map((item) => `
+    <details>
+      <summary>${item.question}</summary>
+      <p>${item.answer}</p>
+    </details>`).join('');
+}
+
 function getFilteredLeads() {
+  const term = adminState.searchTerm.trim().toLowerCase();
   return demoDb.leads.filter((lead) => {
     const statusOk = adminState.leadStatusFilter === 'all' || normalizeLeadStatus(lead.status) === adminState.leadStatusFilter;
     const ambassador = lead.ambassadorId || 'Unassigned';
@@ -904,8 +925,20 @@ function getFilteredLeads() {
     const createdAt = lead.createdAt ? new Date(lead.createdAt).getTime() : 0;
     const fromOk = !adminState.leadDateFrom || createdAt >= new Date(adminState.leadDateFrom).getTime();
     const toOk = !adminState.leadDateTo || createdAt <= new Date(adminState.leadDateTo).getTime();
-    return statusOk && ambassadorOk && fromOk && toOk;
+    const matchesSearch = !term
+      || String(lead.company || '').toLowerCase().includes(term)
+      || String(lead.name || '').toLowerCase().includes(term)
+      || String(lead.email || lead.contactEmail || '').toLowerCase().includes(term)
+      || String(lead.id || '').toLowerCase().includes(term);
+    return statusOk && ambassadorOk && fromOk && toOk && matchesSearch;
   });
+}
+
+function getFilteredTickets() {
+  const term = adminState.searchTerm.trim().toLowerCase();
+  return (demoDb.tickets || [])
+    .filter((ticket) => adminState.ticketStatusFilter === 'all' || ticket.status === adminState.ticketStatusFilter)
+    .filter((ticket) => !term || `${ticket.id} ${ticket.subject} ${ticket.category}`.toLowerCase().includes(term));
 }
 
 function getAdminStatusLabel(status) {
@@ -1085,8 +1118,10 @@ function renderAdmin() {
   }).join('');
   document.querySelector('#leadEmptyState').hidden = filteredLeads.length > 0;
 
+  const searchTerm = adminState.searchTerm.trim().toLowerCase();
   ambassadorBody.innerHTML = demoDb.ambassadors
     .filter((amb) => adminState.ambassadorStatusFilter === 'all' || amb.status === adminState.ambassadorStatusFilter)
+    .filter((amb) => !searchTerm || `${amb.name} ${amb.email} ${amb.id}`.toLowerCase().includes(searchTerm))
     .map((ambassador) => {
       const totals = calculateAmbassadorTotals(ambassador.id);
       return `<tr><td>${ambassador.name}</td><td><select class="ambassador-status" data-id="${ambassador.id}">${['Pending','Active','Paused','Terminated'].map((s)=>`<option value="${s}" ${s===ambassador.status?'selected':''}>${getAdminAmbassadorStatusLabel(s)}</option>`).join('')}</select></td>
@@ -1111,15 +1146,14 @@ function renderAdmin() {
       <td>${pendingPayout?.paidAt ? formatDate(pendingPayout.paidAt) : '—'}</td><td>${pendingPayout?.status || 'Ingen'}</td></tr>`;
   }).join('');
 
-  document.querySelector('#shareTextBody').innerHTML = (demoDb.shareTexts || []).map((item) => `<tr><td>${item.source}</td><td>${item.title}</td><td><button class="btn-secondary read-share" data-id="${item.id}">Les</button></td><td><button class="btn-secondary edit-share" data-id="${item.id}">Rediger</button></td><td>${item.traffic || 0}</td><td>${item.conversions || 0}</td></tr>`).join('');
-  document.querySelector('#ticketBody').innerHTML = (demoDb.tickets || [])
-    .filter((ticket) => adminState.ticketStatusFilter === 'all' || ticket.status === adminState.ticketStatusFilter)
+  document.querySelector('#shareTextBody').innerHTML = (demoDb.shareTexts || []).map((item) => `<tr><td>${item.source}</td><td>${item.title}</td><td><button class="btn-secondary read-share" data-id="${item.id}">Les</button></td><td><button class="btn-secondary edit-share" data-id="${item.id}">Rediger</button> <button class="btn-secondary delete-share" data-id="${item.id}">Slett</button></td><td>${item.traffic || 0}</td><td>${item.conversions || 0}</td></tr>`).join('');
+  document.querySelector('#ticketBody').innerHTML = getFilteredTickets()
     .map((ticket) => {
       const ambassador = demoDb.ambassadors.find((item) => item.id === ticket.ambassadorId);
-      return `<tr><td>${ticket.id}</td><td>${ambassador?.name || ticket.ambassadorId}</td><td>${ticket.subject}</td><td>${ticket.status}</td><td><button class="btn-secondary open-ticket-detail" data-id="${ticket.id}">Mer</button></td></tr>`;
-    }).join('');
+      return `<tr><td>${ticket.id}</td><td>${ambassador?.name || ticket.ambassadorId}</td><td>${ticket.subject}</td><td>${ticket.status}</td><td><button class="btn-secondary open-ticket-detail" data-id="${ticket.id}">Mer</button> <button class="btn-secondary close-ticket" data-id="${ticket.id}">Lukk</button></td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="muted">Ingen tickets funnet.</td></tr>';
   document.querySelector('#adminUsersBody').innerHTML = getAdminUsersRows().map((user) => `<tr><td>${user.name}<br/><span class="muted">${user.email}</span></td><td>${user.role}</td><td><button class="btn-secondary">Endre</button></td></tr>`).join('');
-  document.querySelector('#faqBody').innerHTML = (demoDb.faqItems || []).map((item) => `<tr><td>${item.category}</td><td>${item.question}</td><td>${item.answer}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Ingen FAQ registrert.</td></tr>';
+  document.querySelector('#faqBody').innerHTML = (demoDb.faqItems || []).filter((item) => !searchTerm || `${item.category} ${item.question} ${item.answer}`.toLowerCase().includes(searchTerm)).map((item) => `<tr><td>${item.category}</td><td>${item.question}</td><td>${item.answer}</td><td><button class="btn-secondary edit-faq" data-id="${item.id}">Rediger</button> <button class="btn-secondary delete-faq" data-id="${item.id}">Slett</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Ingen FAQ registrert.</td></tr>';
 
   renderLeadDetailPanel();
   renderTicketDetailPanel();
@@ -1149,6 +1183,10 @@ function initAdminPage() {
   const ticketStatusFilter = document.querySelector('#ticketStatusFilter');
   const addAmbassadorForm = document.querySelector('#addAmbassadorForm');
   const addAmbassadorMessage = document.querySelector('#addAmbassadorMessage');
+  const openSearchModal = document.querySelector('#openSearchModal');
+  const closeSearchModal = document.querySelector('#closeSearchModal');
+  const searchModal = document.querySelector('#adminSearchModal');
+  const globalSearch = document.querySelector('#globalSearch');
 
   if (leadStatusFilter) leadStatusFilter.innerHTML = `<option value="all">Status</option>${LEAD_STATUSES.map((status) => `<option value="${status}">${getAdminStatusLabel(status)}</option>`).join('')}`;
   if (leadAmbassadorFilter) {
@@ -1161,6 +1199,23 @@ function initAdminPage() {
   if (ticketStatusFilter) ticketStatusFilter.innerHTML = `<option value="all">Alle</option><option value="ubesvart">Ubesvarte</option><option value="besvart">Besvarte</option><option value="avsluttet">Avsluttede</option>`;
 
   renderAdmin();
+
+  openSearchModal?.addEventListener('click', () => {
+    if (!searchModal) return;
+    searchModal.hidden = false;
+    globalSearch?.focus();
+  });
+  closeSearchModal?.addEventListener('click', () => {
+    if (!searchModal) return;
+    searchModal.hidden = true;
+  });
+  searchModal?.addEventListener('click', (event) => {
+    if (event.target === searchModal) searchModal.hidden = true;
+  });
+  globalSearch?.addEventListener('input', (event) => {
+    adminState.searchTerm = String(event.target.value || '').trim();
+    renderAdmin();
+  });
 
   document.querySelector('#adminKpiCards')?.addEventListener('click', (event) => {
     const card = event.target.closest('.kpi-filter-card');
@@ -1201,22 +1256,26 @@ function initAdminPage() {
     adminState.selectedLeadId = button.dataset.id;
     renderLeadDetailPanel();
   });
-  leadBody.addEventListener('change', (event) => {
+  leadBody.addEventListener('change', async (event) => {
     const statusSelect = event.target.closest('.lead-status-select');
     if (!statusSelect) return;
     const lead = demoDb.leads.find((item) => item.id === statusSelect.dataset.id);
     if (!lead) return;
     lead.status = statusSelect.value;
     recalculateLeadCommission(lead);
+    if (!isDemoAdminSession()) await updateLeadInStore(db, lead.id, lead);
     renderAdmin();
   });
 
-  ambassadorBody.addEventListener('change', (event) => {
+  ambassadorBody.addEventListener('change', async (event) => {
     const statusSelect = event.target.closest('.ambassador-status');
     if (!statusSelect) return;
     const ambassador = demoDb.ambassadors.find((item) => item.id === statusSelect.dataset.id);
     if (!ambassador) return;
     ambassador.status = statusSelect.value;
+    if (!isDemoAdminSession()) {
+      await updateDoc(doc(db, 'ambassadors', ambassador.id), { status: normalizeAdminStatusLabel(statusSelect.value), updatedAt: serverTimestamp() });
+    }
     renderAdmin();
   });
   ambassadorBody.addEventListener('click', (event) => {
@@ -1251,21 +1310,33 @@ function initAdminPage() {
     }
   });
 
-  document.querySelector('#adminIncomeBody')?.addEventListener('change', (event) => {
+  document.querySelector('#adminIncomeBody')?.addEventListener('change', async (event) => {
     const select = event.target.closest('.income-status-select');
     if (!select) return;
     const lead = demoDb.leads.find((item) => item.id === select.dataset.id);
     if (!lead) return;
     lead.incomeStatus = select.value;
+    if (!isDemoAdminSession()) await updateDoc(doc(db, 'leads', lead.id), { incomeStatus: select.value, updatedAt: serverTimestamp() });
     renderAdmin();
   });
-  document.querySelector('#ticketBody')?.addEventListener('click', (event) => {
+  document.querySelector('#ticketBody')?.addEventListener('click', async (event) => {
     const button = event.target.closest('.open-ticket-detail');
-    if (!button) return;
-    adminState.selectedTicketId = button.dataset.id;
-    renderTicketDetailPanel();
+    const closeButton = event.target.closest('.close-ticket');
+    if (button) {
+      adminState.selectedTicketId = button.dataset.id;
+      renderTicketDetailPanel();
+      return;
+    }
+    if (!closeButton) return;
+    const ticket = (demoDb.tickets || []).find((item) => String(item.id) === String(closeButton.dataset.id));
+    if (!ticket) return;
+    ticket.status = 'avsluttet';
+    if (!isDemoAdminSession()) {
+      await updateDoc(doc(db, 'tickets', ticket.id), { status: 'avsluttet', updatedAt: serverTimestamp() });
+    }
+    renderAdmin();
   });
-  document.querySelector('#ticketDetailPanel')?.addEventListener('click', (event) => {
+  document.querySelector('#ticketDetailPanel')?.addEventListener('click', async (event) => {
     const send = event.target.closest('#sendTicketReply');
     if (!send) return;
     const ticket = (demoDb.tickets || []).find((item) => String(item.id) === String(adminState.selectedTicketId));
@@ -1273,24 +1344,75 @@ function initAdminPage() {
     if (!ticket || !text) return;
     ticket.messages.push({ from: 'admin', text, at: new Date().toISOString() });
     ticket.status = 'besvart';
+    if (!isDemoAdminSession()) {
+      await updateDoc(doc(db, 'tickets', ticket.id), { messages: ticket.messages, status: 'besvart', updatedAt: serverTimestamp() });
+    }
     renderAdmin();
   });
-  document.querySelector('#newShareTextBtn')?.addEventListener('click', () => {
+  document.querySelector('#newShareTextBtn')?.addEventListener('click', async () => {
     const title = prompt('Tittel for delingstekst');
     if (!title) return;
-    demoDb.shareTexts.push({ id: `share-${Date.now()}`, source: 'Annet', title, text: 'Ny tekst', traffic: 0, conversions: 0 });
+    const entry = { id: `share-${Date.now()}`, source: 'Annet', title, text: 'Ny tekst', traffic: 0, conversions: 0 };
+    demoDb.shareTexts.push(entry);
+    if (!isDemoAdminSession()) await setDoc(doc(db, 'share_texts', entry.id), { ...entry, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
     renderAdmin();
   });
-  document.querySelector('#addFaqBtn')?.addEventListener('click', () => {
+  document.querySelector('#shareTextBody')?.addEventListener('click', async (event) => {
+    const edit = event.target.closest('.edit-share');
+    const read = event.target.closest('.read-share');
+    const del = event.target.closest('.delete-share');
+    const item = (demoDb.shareTexts || []).find((share) => share.id === (edit?.dataset.id || read?.dataset.id || del?.dataset.id));
+    if (!item) return;
+    if (read) {
+      alert(item.text || 'Ingen tekst');
+      return;
+    }
+    if (edit) {
+      const updatedText = prompt('Oppdater tekst', item.text || '');
+      if (!updatedText) return;
+      item.text = updatedText;
+      if (!isDemoAdminSession()) await updateDoc(doc(db, 'share_texts', item.id), { text: updatedText, updatedAt: serverTimestamp() });
+      renderAdmin();
+      return;
+    }
+    if (del) {
+      demoDb.shareTexts = demoDb.shareTexts.filter((share) => share.id !== item.id);
+      if (!isDemoAdminSession()) await deleteDoc(doc(db, 'share_texts', item.id));
+      renderAdmin();
+    }
+  });
+
+  document.querySelector('#addFaqBtn')?.addEventListener('click', async () => {
     const category = prompt('Kategori');
     const question = prompt('Spørsmål/Emne');
     const answer = prompt('Svartekst');
     if (!category || !question || !answer) return;
-    demoDb.faqItems.push({ id: `faq-${Date.now()}`, category, question, answer });
+    const item = { id: `faq-${Date.now()}`, category, question, answer };
+    demoDb.faqItems.push(item);
+    if (!isDemoAdminSession()) await setDoc(doc(db, 'faq_items', item.id), { ...item, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
+    renderAdmin();
+  });
+  document.querySelector('#faqBody')?.addEventListener('click', async (event) => {
+    const edit = event.target.closest('.edit-faq');
+    const del = event.target.closest('.delete-faq');
+    if (!edit && !del) return;
+    const item = (demoDb.faqItems || []).find((faq) => faq.id === (edit?.dataset.id || del?.dataset.id));
+    if (!item) return;
+    if (edit) {
+      const question = prompt('Oppdater spørsmål', item.question || '');
+      const answer = prompt('Oppdater svar', item.answer || '');
+      if (!question || !answer) return;
+      item.question = question;
+      item.answer = answer;
+      if (!isDemoAdminSession()) await updateDoc(doc(db, 'faq_items', item.id), { question, answer, updatedAt: serverTimestamp() });
+    } else {
+      demoDb.faqItems = demoDb.faqItems.filter((faq) => faq.id !== item.id);
+      if (!isDemoAdminSession()) await deleteDoc(doc(db, 'faq_items', item.id));
+    }
     renderAdmin();
   });
 
-  detailPanel?.addEventListener('click', (event) => {
+  detailPanel?.addEventListener('click', async (event) => {
     const saveLeadDetailButton = event.target.closest('#saveLeadDetail');
     const addCommentButton = event.target.closest('#addLeadComment');
     if (saveLeadDetailButton) {
@@ -1309,6 +1431,7 @@ function initAdminPage() {
       if (previousStatus !== normalizeLeadStatus(lead.status)) {
         lead.auditLog.unshift({ createdAt: new Date().toISOString(), text: `Pipeline endret fra ${getAdminStatusLabel(previousStatus)} til ${getAdminStatusLabel(lead.status)}` });
       }
+      if (!isDemoAdminSession()) await updateLeadInStore(db, lead.id, lead);
       renderAdmin();
     }
     if (addCommentButton) {
@@ -1632,6 +1755,32 @@ function subscribeToFirestoreUsers() {
   });
 }
 
+
+function subscribeToFirestoreFaqItems() {
+  const faqQuery = query(collection(db, 'faq_items'), orderBy('createdAt', 'desc'));
+  onSnapshot(faqQuery, (snapshot) => {
+    demoDb.faqItems = snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }));
+    renderAdmin();
+    renderLandingFaq();
+  });
+}
+
+function subscribeToFirestoreShareTexts() {
+  const shareQuery = query(collection(db, 'share_texts'), orderBy('createdAt', 'desc'));
+  onSnapshot(shareQuery, (snapshot) => {
+    demoDb.shareTexts = snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }));
+    renderAdmin();
+  });
+}
+
+function subscribeToFirestoreTickets() {
+  const ticketQuery = query(collection(db, 'tickets'), orderBy('updatedAt', 'desc'));
+  onSnapshot(ticketQuery, (snapshot) => {
+    demoDb.tickets = snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, messages: [], ...docSnapshot.data() }));
+    renderAdmin();
+  });
+}
+
 captureReferral();
 trackReferralFromUrl();
 handleRedirectLoginResult();
@@ -1657,6 +1806,9 @@ if (!isDemoAdminSession()) {
   subscribeToFirestoreLeads();
   subscribeToFirestoreAmbassadors();
   subscribeToFirestoreUsers();
+  subscribeToFirestoreFaqItems();
+  subscribeToFirestoreShareTexts();
+  subscribeToFirestoreTickets();
 }
 
 document.querySelector('#loginGoogle')?.addEventListener('click', window.loginWithGoogle);
