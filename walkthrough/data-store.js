@@ -18,7 +18,10 @@ export const demoDb = {
   leads: [],
   payouts: [],
   invoices: [],
-  socialShares: []
+  socialShares: [],
+  shareTexts: [],
+  tickets: [],
+  faqItems: []
 };
 
 export function subscribeToUsersInStore(db, callback) {

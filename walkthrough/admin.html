@@ -41,7 +41,7 @@
             <h1>Super Admin</h1>
           </div>
           <div class="topbar-actions superadmin-topbar-actions">
-            <input id="globalSearch" class="global-search" placeholder="Søk lead / ambassadør / firma" />
+            <button id="openSearchModal" class="btn-icon btn-secondary" title="Søk">🔎</button>
             <details class="user-dropdown notification-dropdown">
               <summary id="notificationButton" class="btn-icon btn-secondary" title="Varsler">🔔</summary>
               <div class="user-dropdown-menu notification-menu">
@@ -189,7 +189,7 @@
             <div class="row-actions"><button id="addFaqBtn" class="btn-secondary">Legg til FAQ</button></div>
             <div class="table-wrap">
               <table class="table">
-                <thead><tr><th>Kategori</th><th>Spørsmål</th><th>Svar</th></tr></thead>
+                <thead><tr><th>Kategori</th><th>Spørsmål</th><th>Svar</th><th>Handling</th></tr></thead>
                 <tbody id="faqBody"></tbody>
               </table>
             </div>
@@ -224,6 +224,17 @@
           </section>
         </main>
         <footer class="site-footer">© Delivered by Setai.no</footer>
+      </div>
+    </div>
+
+
+    <div id="adminSearchModal" class="search-modal" hidden>
+      <div class="search-modal-content">
+        <div class="search-modal-header">
+          <input id="globalSearch" class="global-search" placeholder="Søk leads, ambassadører, tickets og FAQ" />
+          <button id="closeSearchModal" class="btn-secondary" type="button">Lukk</button>
+        </div>
+        <p class="muted">Live-resultater vises direkte i tabellene.</p>
       </div>
     </div>
 
