@@ -275,17 +275,23 @@
         messageBox.textContent = "Sender forespørsel...";
 
         try {
-          const ambassadorId = getCookie("ambassadorRef");
+          const ambassadorRef = String(getCookie("ambassadorRef") || "").trim();
+          const companyName = document.getElementById("companyName").value;
+          const contactName = document.getElementById("contactName").value;
+          const email = document.getElementById("email").value;
 
           await addDoc(collection(db, "leads"), {
-            companyName: document.getElementById("companyName").value,
-            contactName: document.getElementById("contactName").value,
-            email: document.getElementById("email").value,
+            company: companyName,
+            companyName,
+            name: contactName,
+            contactName,
+            email,
             phone: document.getElementById("phone").value || null,
             filmType: document.getElementById("filmType").value || null,
             description: document.getElementById("description").value || null,
 
-            ambassadorId: ambassadorId || null,
+            ambassadorId: /^[A-Za-z0-9_-]{20,}$/.test(ambassadorRef) ? ambassadorRef : null,
+            referralCode: ambassadorRef.toLowerCase().startsWith("amb") ? ambassadorRef.toLowerCase() : null,
             status: "open",
             commissionPercent: 0,
             commissionAmount: 0,
@@ -304,19 +310,8 @@
 
         } catch (error) {
           console.error(error);
-          const localRequests = JSON.parse(localStorage.getItem("localContactRequests") || "[]");
-          localRequests.unshift({
-            companyName: document.getElementById("companyName").value,
-            contactName: document.getElementById("contactName").value,
-            email: document.getElementById("email").value,
-            phone: document.getElementById("phone").value || null,
-            filmType: document.getElementById("filmType").value || null,
-            description: document.getElementById("description").value || null,
-            createdAt: new Date().toISOString()
-          });
-          localStorage.setItem("localContactRequests", JSON.stringify(localRequests));
-          messageBox.style.color = "#b26a00";
-          messageBox.textContent = "Skjemaet er midlertidig utilgjengelig. Forespørselen er lagret lokalt – prøv igjen om litt.";
+          messageBox.style.color = "#b00020";
+          messageBox.textContent = "Kunne ikke sende skjema akkurat nå. Prøv igjen om litt.";
         }
       });
     </script>

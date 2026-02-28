@@ -17,7 +17,7 @@ import { initAmbassadorCharts, refreshAmbassadorCharts, setAmbassadorChartData }
 import { captureReferral } from './referral.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
 import { createUserWithEmailAndPassword, getAuth, getIdTokenResult, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
-import { addDoc, collection, deleteDoc, doc, getDoc, getFirestore, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { collection, deleteDoc, doc, getDoc, getFirestore, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA9ESuWhXXsevI47cY_A0YijhAawC7s0Zs',
@@ -35,6 +35,7 @@ const db = getFirestore(firebaseApp);
 const authMessage = document.querySelector('#authMessage');
 const REFERRAL_COOKIE_KEY = 'ref';
 const DEFAULT_COMMISSION_RATE = 0.1;
+const AUTH_REDIRECT_PENDING_KEY = 'authRedirectPending';
 
 const DEMO_ADMIN_USERNAME = 'Super';
 const DEMO_ADMIN_PASSWORD = 'Admin';
@@ -609,16 +610,31 @@ async function ensureAmbassadorProfile(user) {
 async function handleRedirectLoginResult() {
   try {
     const result = await getRedirectResult(auth);
-    if (!result?.user) return;
+    const hadPendingRedirect = localStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === 'true';
+    localStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+    if (!result?.user) {
+      if (hadPendingRedirect) setAuthMessage('Ingen aktiv innlogging ble fullført. Prøv igjen.');
+      return;
+    }
     await ensureUserProfile(result.user);
     const adminUser = await isAdmin(result.user);
     if (!adminUser) await ensureAmbassadorProfile(result.user);
+    authState.user = result.user;
+    authState.isAdmin = adminUser;
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('isAdmin', String(adminUser));
     demoDb.userProfile.fullName = result.user.displayName || demoDb.userProfile.fullName;
     demoDb.userProfile.email = result.user.email || demoDb.userProfile.email;
     demoDb.userProfile.avatarUrl = result.user.photoURL || demoDb.userProfile.avatarUrl;
     setAuthMessage(`Innlogget som ${result.user.email}`);
+    hideProtectedNavigation(true, adminUser);
+    syncProfileUi();
+    if (window.location.pathname.endsWith('/index.html') || window.location.pathname.endsWith('/walkthrough/') || window.location.pathname.endsWith('/walkthrough')) {
+      window.location.assign(adminUser ? 'admin.html' : 'ambassador.html');
+    }
   } catch {
     // ignore on pages without auth flow
+    localStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
   }
 }
 
@@ -642,6 +658,7 @@ window.loginWithGoogle = async () => {
     window.location.assign(adminUser ? 'admin.html' : 'ambassador.html');
   } catch (error) {
     if (error?.code === 'auth/popup-blocked') {
+      localStorage.setItem(AUTH_REDIRECT_PENDING_KEY, 'true');
       await signInWithRedirect(auth, provider);
       return;
     }
@@ -654,7 +671,8 @@ function loginWithFacebookDemo() {
 }
 
 async function createLead({ name, company, email }) {
-  const ambassadorId = localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || null;
+  const referralCode = normalizeReferralCode(localStorage.getItem('ambassadorRef') || getCookie(REFERRAL_COOKIE_KEY) || '');
+  const ambassadorId = authState.user?.uid || null;
 
   if (isDemoAdminSession()) {
     const localLead = captureLeadCommission({
@@ -676,7 +694,13 @@ async function createLead({ name, company, email }) {
   }
   if (ambassadorId) localStorage.setItem('ambassadorRef', ambassadorId);
 
-  const lead = await createLeadInStore(db, { name, company, email });
+  const lead = await createLeadInStore(db, {
+    name,
+    company,
+    email,
+    ambassadorId,
+    referralCode
+  });
   const localLead = captureLeadCommission({
     ...lead,
     ambassadorId: lead.ambassadorId || ambassadorId,
@@ -717,25 +741,7 @@ async function createAmbassadorFromAdmin({ name, email, commissionPercent }) {
     return localAmbassador;
   }
 
-  const docRef = await addDoc(collection(db, 'ambassadors'), {
-    name: trimmedName,
-    email: trimmedEmail,
-    commissionRate,
-    referralCode,
-    status: 'pending',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  });
-
-  return {
-    id: docRef.id,
-    name: trimmedName,
-    email: trimmedEmail,
-    commissionRate,
-    referralCode,
-    status: 'Pending',
-    createdAt: new Date().toISOString()
-  };
+  throw new Error('Ambassadørdokument må opprettes med autentisert UID (ambassadors/{uid}). Opprett brukeren i Auth først og la onboarding opprette profilen.');
 }
 
 function autoRedirectAfterSubmit({ messageNode, target, delayMs = 1400, message }) {
@@ -926,8 +932,8 @@ function getFilteredLeads() {
     const fromOk = !adminState.leadDateFrom || createdAt >= new Date(adminState.leadDateFrom).getTime();
     const toOk = !adminState.leadDateTo || createdAt <= new Date(adminState.leadDateTo).getTime();
     const matchesSearch = !term
-      || String(lead.company || '').toLowerCase().includes(term)
-      || String(lead.name || '').toLowerCase().includes(term)
+      || String(lead.company || lead.companyName || '').toLowerCase().includes(term)
+      || String(lead.name || lead.contactName || '').toLowerCase().includes(term)
       || String(lead.email || lead.contactEmail || '').toLowerCase().includes(term)
       || String(lead.id || '').toLowerCase().includes(term);
     return statusOk && ambassadorOk && fromOk && toOk && matchesSearch;

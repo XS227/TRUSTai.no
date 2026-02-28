@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+import { addDoc, collection, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
 
 export const LEAD_STATUSES = ['open', 'meeting_booked', 'offer_sent', 'approved', 'rejected'];
 export const AMBASSADOR_STATUSES = ['Pending', 'Active', 'Paused'];
@@ -143,48 +143,18 @@ export function captureLeadCommission(lead) {
   };
 }
 
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-}
-
-export async function createLeadInStore(db, { name, company, email }) {
-  const ambassadorRef = String(localStorage.getItem('ambassadorRef') || getCookie('ambassadorRef') || '').trim();
-  let ambassadorId = ambassadorRef || null;
+export async function createLeadInStore(db, { name, company, email, ambassadorId = null, referralCode = '' }) {
+  const normalizedReferralCode = String(referralCode || '').trim().toLowerCase();
   let ambassadorCommissionRate = 0.1;
 
-  if (ambassadorRef && /^amb[0-9a-z]+$/i.test(ambassadorRef)) {
-    const ambassadorByReferralQuery = query(collection(db, 'ambassadors'), where('referralCode', '==', ambassadorRef.toLowerCase()), limit(1));
-    const ambassadorByReferralSnapshot = await getDocs(ambassadorByReferralQuery);
-    if (!ambassadorByReferralSnapshot.empty) {
-      const ambassadorDoc = ambassadorByReferralSnapshot.docs[0];
-      ambassadorId = ambassadorDoc.id;
-      ambassadorCommissionRate = Number(ambassadorDoc.data()?.commissionRate || ambassadorCommissionRate);
-    }
-  } else if (ambassadorRef && ambassadorRef !== 'null') {
-    const ambassadorDoc = await getDoc(doc(db, 'ambassadors', ambassadorRef));
+  if (ambassadorId) {
+    const ambassadorDoc = await getDoc(doc(db, 'ambassadors', ambassadorId));
     if (ambassadorDoc.exists()) {
-      ambassadorId = ambassadorDoc.id;
       ambassadorCommissionRate = Number(ambassadorDoc.data()?.commissionRate || ambassadorCommissionRate);
     }
   }
 
   const normalizedCompany = String(company || '').trim().toLowerCase();
-
-  if (normalizedCompany) {
-    const duplicateQuery = query(collection(db, 'leads'), where('normalizedCompany', '==', normalizedCompany), limit(1));
-    const duplicateSnapshot = await getDocs(duplicateQuery);
-    if (!duplicateSnapshot.empty) {
-      const existingLead = duplicateSnapshot.docs[0];
-      return {
-        id: existingLead.id,
-        ...existingLead.data(),
-        duplicate: true
-      };
-    }
-  }
 
   const leadPayload = {
     name,
@@ -195,7 +165,7 @@ export async function createLeadInStore(db, { name, company, email }) {
     email,
     phone: '',
     ambassadorId: ambassadorId || null,
-    referralCode: /^amb[0-9a-z]+$/i.test(ambassadorRef) ? ambassadorRef.toLowerCase() : null,
+    referralCode: /^amb[0-9a-z]+$/i.test(normalizedReferralCode) ? normalizedReferralCode : null,
     source: 'direct',
     landingPage: 'training',
     status: 'open',
